@@ -3,6 +3,7 @@ import { hasSupabase } from './services/supabaseClient.js';
 import { signIn, signUp, signOutUser, sendPasswordReset, getSession, onAuthChange, toAuthUser } from './services/auth.service.js';
 import { useCloudSync } from './hooks/useCloudSync.js';
 import { deleteAccount } from './services/account.service.js';
+import { initStatusBar, isNative } from './services/platform.service.js';
 import SupportScreen from './components/legal/SupportScreen.jsx';
 import PrivacyPolicyScreen from './components/legal/PrivacyPolicyScreen.jsx';
 import {
@@ -271,6 +272,24 @@ export default function App() {
       else { setAuthUser(null); }
     });
     return () => { mounted = false; sub?.subscription?.unsubscribe?.(); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Native shell: status bar + Android hardware back button.
+  const navStateRef = useRef({ legalView, tab });
+  navStateRef.current = { legalView, tab };
+  useEffect(() => {
+    if (!isNative()) return;
+    initStatusBar();
+    let handle;
+    import('@capacitor/app').then(({ App: CapApp }) => {
+      CapApp.addListener('backButton', () => {
+        const st = navStateRef.current;
+        if (st.legalView) { setLegalView(null); return; }
+        if (st.tab && st.tab !== 'today') { setTab('today'); return; }
+        CapApp.exitApp();
+      }).then((h) => { handle = h; });
+    });
+    return () => { if (handle) handle.remove(); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(()=>{safeSet("cycleDay",cycleDay);},[cycleDay]);
@@ -1632,7 +1651,7 @@ PRO TIP: [one insider detail that elevates this from good to unforgettable]`);
   };
 
   return (
-    <div style={{minHeight:"100vh",background:"#0d0d0d",color:"#f0ece4",fontFamily:"'DM Sans','Helvetica Neue',sans-serif",maxWidth:480,margin:"0 auto",position:"relative",paddingBottom:90}}>
+    <div style={{minHeight:"100vh",background:"#0d0d0d",color:"#f0ece4",fontFamily:"'DM Sans','Helvetica Neue',sans-serif",maxWidth:480,margin:"0 auto",position:"relative",paddingBottom:"calc(90px + env(safe-area-inset-bottom))"}}>
       <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
       <style>{`@keyframes slideDown{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}`}</style>
 
@@ -2944,7 +2963,7 @@ PRO TIP: [one insider detail that elevates this from good to unforgettable]`);
       </div>
 
       {/* Bottom Nav */}
-      <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:480,background:"#111",borderTop:"1px solid #2a2a2a",display:"flex",zIndex:100}}>
+      <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:480,background:"#111",borderTop:"1px solid #2a2a2a",display:"flex",zIndex:100,paddingBottom:"env(safe-area-inset-bottom)"}}>
         {tabs.map(t=>{
           const profileIncomplete = t.id==="profile" && (!wifeName||!wifeBirthYear||!cycleStartDate);
           return (

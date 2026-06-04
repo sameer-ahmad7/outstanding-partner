@@ -2,6 +2,9 @@ import { useState, useEffect, useRef } from "react";
 import { hasSupabase } from './services/supabaseClient.js';
 import { signIn, signUp, signOutUser, sendPasswordReset, getSession, onAuthChange, toAuthUser } from './services/auth.service.js';
 import { useCloudSync } from './hooks/useCloudSync.js';
+import { deleteAccount } from './services/account.service.js';
+import SupportScreen from './components/legal/SupportScreen.jsx';
+import PrivacyPolicyScreen from './components/legal/PrivacyPolicyScreen.jsx';
 import {
   NEURO,
   SHC,
@@ -161,6 +164,18 @@ export default function App() {
   const [diagnosticLoading,setDiagnosticLoading] = useState(false);
   const [diagnosticDone,setDiagnosticDone] = useState(false);
   const [showResetConfirm,setShowResetConfirm] = useState(false);
+  const [legalView,setLegalView] = useState(null); // 'support' | 'privacy' | null
+  const [showDeleteConfirm,setShowDeleteConfirm] = useState(false);
+  const [deleteLoading,setDeleteLoading] = useState(false);
+
+  const handleDeleteAccount = async () => {
+    setDeleteLoading(true);
+    try { if (!isPreviewMode) await deleteAccount(); } catch(e) { /* proceed to local wipe regardless */ }
+    try { if (!isPreviewMode) await signOutUser(); } catch(e) {}
+    try { localStorage.clear(); sessionStorage.clear(); } catch(e) {}
+    setAuthUser(null); setSubscribed(false); setSubTier("basic");
+    location.reload();
+  };
   const [challengeDay,setChallengeDay] = useState(0); // fresh start
   const [challengeStarted,setChallengeStarted] = useState(false); // fresh start
   const [completedDays,setCompletedDays] = useState(()=>safeGetJSON("completedDays",[]));
@@ -1169,6 +1184,38 @@ PRO TIP: [one insider detail that elevates this from good to unforgettable]`);
                 )}
               </div>
             </div>
+
+            {/* About & Legal */}
+            <div style={{marginBottom:20,background:"#141414",border:"1px solid #2a2a2a",borderRadius:14,padding:16}}>
+              <div style={{fontSize:12,color:"#888",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10}}>About & Legal</div>
+              <div style={{display:"flex",flexDirection:"column",gap:8}}>
+                <button onClick={()=>setLegalView("support")} style={{textAlign:"left",background:"#1a1a1a",border:"1px solid #2a2a2a",borderRadius:10,padding:"12px 14px",fontSize:14,color:"#f0ece4",cursor:"pointer"}}>💬 Support & FAQ</button>
+                <button onClick={()=>setLegalView("privacy")} style={{textAlign:"left",background:"#1a1a1a",border:"1px solid #2a2a2a",borderRadius:10,padding:"12px 14px",fontSize:14,color:"#f0ece4",cursor:"pointer"}}>🔒 Privacy Policy</button>
+              </div>
+            </div>
+
+            {/* Danger zone - Delete account */}
+            <div style={{marginBottom:20,background:"#1a0a0a",border:"1px solid #e74c3c20",borderRadius:14,padding:16}}>
+              <div style={{fontSize:12,color:"#e74c3c",fontWeight:700,textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:6}}>🗑️ Delete Account</div>
+              <div style={{fontSize:12,color:"#777",lineHeight:1.5,marginBottom:10}}>Permanently deletes your account and all data from our servers. This cannot be undone.</div>
+              {!showDeleteConfirm?(
+                <button onClick={()=>setShowDeleteConfirm(true)} style={{background:"#1a0a0a",border:"1px solid #e74c3c40",borderRadius:10,padding:"9px 16px",fontSize:12,fontWeight:700,color:"#e74c3c",cursor:"pointer"}}>
+                  Delete My Account
+                </button>
+              ):(
+                <div style={{background:"#2a0a0a",border:"1px solid #e74c3c60",borderRadius:10,padding:14}}>
+                  <div style={{fontSize:12,color:"#f0ece4",marginBottom:10,fontWeight:600}}>Permanently delete your account and all data?</div>
+                  <div style={{display:"flex",gap:8}}>
+                    <button disabled={deleteLoading} onClick={handleDeleteAccount} style={{flex:1,background:"#e74c3c",color:"#fff",border:"none",borderRadius:8,padding:"9px 0",fontSize:12,fontWeight:700,cursor:"pointer",opacity:deleteLoading?0.7:1}}>
+                      {deleteLoading?"Deleting…":"Yes, Delete Forever"}
+                    </button>
+                    <button disabled={deleteLoading} onClick={()=>setShowDeleteConfirm(false)} style={{flex:1,background:"#1a1a1a",border:"1px solid #333",color:"#888",borderRadius:8,padding:"9px 0",fontSize:12,cursor:"pointer"}}>
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         )}
 
@@ -1588,6 +1635,10 @@ PRO TIP: [one insider detail that elevates this from good to unforgettable]`);
     <div style={{minHeight:"100vh",background:"#0d0d0d",color:"#f0ece4",fontFamily:"'DM Sans','Helvetica Neue',sans-serif",maxWidth:480,margin:"0 auto",position:"relative",paddingBottom:90}}>
       <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
       <style>{`@keyframes slideDown{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}`}</style>
+
+      {/* ── LEGAL SCREENS (modal overlays) ──────────────────────── */}
+      {legalView==="support"&&<SupportScreen onClose={()=>setLegalView(null)}/>}
+      {legalView==="privacy"&&<PrivacyPolicyScreen onClose={()=>setLegalView(null)}/>}
 
       {/* ── AUTH SCREEN ────────────────────────────────────────── */}
       {!authUser&&(

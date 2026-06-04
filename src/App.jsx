@@ -842,7 +842,7 @@ PRO TIP: [one insider detail that elevates this from good to unforgettable]`);
     return (
       <div>
         {/* Sub-nav */}
-        <div style={{display:"flex",gap:6,marginBottom:20,overflowX:"auto",paddingBottom:4}}>
+        <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:20}}>
           {sections.map(s=>(
             <button key={s.id} onClick={()=>setProfileSection(s.id)} style={{background:profileSection===s.id?"#c0392b":"#1a1a1a",color:profileSection===s.id?"#fff":"#888",border:`1px solid ${profileSection===s.id?"#c0392b":"#333"}`,borderRadius:20,padding:"7px 14px",fontSize:12,fontWeight:600,cursor:"pointer",whiteSpace:"nowrap",flexShrink:0}}>{s.icon} {s.label}</button>
           ))}
@@ -871,9 +871,9 @@ PRO TIP: [one insider detail that elevates this from good to unforgettable]`);
             <div style={{marginBottom:20}}>
               <div style={{fontSize:12,color:"#666",textTransform:"uppercase",letterSpacing:"0.1em",marginBottom:10}}>Her Birthday</div>
               <div style={{display:"flex",gap:8}}>
-                <input value={wifeBirthMonth} onChange={e=>setWifeBirthMonth(e.target.value)} placeholder="Month (1-12)" type="number" min="1" max="12" style={{flex:1,background:"#1a1a1a",border:"1px solid #333",color:"#f0ece4",borderRadius:12,padding:"12px 14px",fontSize:14,boxSizing:"border-box",fontFamily:"inherit"}}/>
-                <input value={wifeBirthDay} onChange={e=>setWifeBirthDay(e.target.value)} placeholder="Day" type="number" min="1" max="31" style={{flex:1,background:"#1a1a1a",border:"1px solid #333",color:"#f0ece4",borderRadius:12,padding:"12px 14px",fontSize:14,boxSizing:"border-box",fontFamily:"inherit"}}/>
-                <input value={wifeBirthYear} onChange={e=>setWifeBirthYear(e.target.value)} placeholder="Year" type="number" min="1920" max="2010" style={{flex:1,background:"#1a1a1a",border:"1px solid #333",color:"#f0ece4",borderRadius:12,padding:"12px 14px",fontSize:14,boxSizing:"border-box",fontFamily:"inherit"}}/>
+                <input value={wifeBirthMonth} onChange={e=>setWifeBirthMonth(e.target.value)} placeholder="MM" type="number" min="1" max="12" style={{flex:1,minWidth:0,background:"#1a1a1a",border:"1px solid #333",color:"#f0ece4",borderRadius:12,padding:"12px 14px",fontSize:14,boxSizing:"border-box",fontFamily:"inherit"}}/>
+                <input value={wifeBirthDay} onChange={e=>setWifeBirthDay(e.target.value)} placeholder="DD" type="number" min="1" max="31" style={{flex:1,minWidth:0,background:"#1a1a1a",border:"1px solid #333",color:"#f0ece4",borderRadius:12,padding:"12px 14px",fontSize:14,boxSizing:"border-box",fontFamily:"inherit"}}/>
+                <input value={wifeBirthYear} onChange={e=>setWifeBirthYear(e.target.value)} placeholder="YYYY" type="number" min="1920" max="2010" style={{flex:1,minWidth:0,background:"#1a1a1a",border:"1px solid #333",color:"#f0ece4",borderRadius:12,padding:"12px 14px",fontSize:14,boxSizing:"border-box",fontFamily:"inherit"}}/>
               </div>
             </div>
 
@@ -2825,7 +2825,7 @@ PRO TIP: [one insider detail that elevates this from good to unforgettable]`);
         {tab==="home"&&(
           <div>
             {/* Phase filter */}
-            <div style={{display:"flex",gap:6,marginBottom:16,overflowX:"auto",paddingBottom:4}}>
+            <div style={{display:"flex",flexWrap:"wrap",gap:6,marginBottom:16}}>
               {[
                 {key:"all",      label:"All",       emoji:"✨"},
                 {key:"menstrual",label:"Menstrual",  emoji:"🌑"},

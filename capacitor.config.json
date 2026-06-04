@@ -14,10 +14,10 @@
       "resizeOnFullScreen": true
     },
     "SplashScreen": {
-      "launchShowDuration": 1500,
-      "backgroundColor": "#000000",
+      "launchShowDuration": 2000,
+      "backgroundColor": "#0d0d0d",
       "showSpinner": false,
-      "androidScaleType": "CENTER_CROP"
+      "androidScaleType": "FIT_CENTER"
     }
   }
 }

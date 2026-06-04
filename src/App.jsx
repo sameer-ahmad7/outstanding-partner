@@ -1734,6 +1734,12 @@ PRO TIP: [one insider detail that elevates this from good to unforgettable]`);
               </button>
             </div>
           )}
+
+          {/* Legal links — accessible without an account (App Store requirement) */}
+          <div style={{display:"flex",justifyContent:"center",gap:18,marginTop:28}}>
+            <button onClick={()=>setLegalView("privacy")} style={{background:"transparent",border:"none",color:"#555",fontSize:12,cursor:"pointer",textDecoration:"underline"}}>Privacy Policy</button>
+            <button onClick={()=>setLegalView("support")} style={{background:"transparent",border:"none",color:"#555",fontSize:12,cursor:"pointer",textDecoration:"underline"}}>Support</button>
+          </div>
         </div>
       )}
 
@@ -1788,6 +1794,10 @@ PRO TIP: [one insider detail that elevates this from good to unforgettable]`);
             {isPreviewMode?"Preview mode — no payment required.":"No charge for 7 days. Cancel anytime before trial ends."}
           </div>
           <button onClick={()=>setAuthUser(null)} style={{background:"transparent",border:"none",color:"#333",fontSize:11,cursor:"pointer",textAlign:"center",width:"100%"}}>Sign out</button>
+          <div style={{display:"flex",justifyContent:"center",gap:18,marginTop:14}}>
+            <button onClick={()=>setLegalView("privacy")} style={{background:"transparent",border:"none",color:"#444",fontSize:11,cursor:"pointer",textDecoration:"underline"}}>Privacy Policy</button>
+            <button onClick={()=>setLegalView("support")} style={{background:"transparent",border:"none",color:"#444",fontSize:11,cursor:"pointer",textDecoration:"underline"}}>Support</button>
+          </div>
         </div>
       )}
 

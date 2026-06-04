@@ -12,6 +12,15 @@ dist
 dist-ssr
 *.local
 
+# Env (never commit real secrets; .env.example is tracked)
+.env
+.env.*
+!.env.example
+
+# Supabase CLI local artifacts
+supabase/.temp
+supabase/.branches
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

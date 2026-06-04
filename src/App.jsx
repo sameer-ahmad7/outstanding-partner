@@ -1,4 +1,7 @@
 import { useState, useEffect, useRef } from "react";
+import { hasSupabase } from './services/supabaseClient.js';
+import { signIn, signUp, signOutUser, sendPasswordReset, getSession, onAuthChange, toAuthUser } from './services/auth.service.js';
+import { useCloudSync } from './hooks/useCloudSync.js';
 import {
   NEURO,
   SHC,
@@ -232,8 +235,28 @@ export default function App() {
   const chineseZodiac = getChineseZodiac(parseInt(wifeBirthYear));
   const lifePathNum = getLifePathNumber(wifeBirthDay, wifeBirthMonth, wifeBirthYear);
   const numerology = lifePathNum ? NUMEROLOGY[lifePathNum] : null;
-  const isPreviewMode = !API_URL;
+  // Dev-only bypass: skip real auth when explicitly enabled, or when Supabase isn't configured.
+  const isPreviewMode = (import.meta.env.VITE_DEV_AUTH_BYPASS === 'true') || !hasSupabase;
   const isPremium = subTier === "premium" || isPreviewMode;
+
+  // Cloud sync: hydrate from / push to Supabase while authenticated (Supabase mode only).
+  useCloudSync(authUser?.id, !isPreviewMode && !!authUser);
+
+  // Restore Supabase session on launch + subscribe to auth changes.
+  useEffect(() => {
+    if (isPreviewMode) return;
+    let mounted = true;
+    getSession().then(({ data }) => {
+      const u = data?.session?.user;
+      if (mounted && u) { setAuthUser(toAuthUser(u)); setSubscribed(true); }
+    });
+    const { data: sub } = onAuthChange((session) => {
+      if (!mounted) return;
+      if (session?.user) { setAuthUser(toAuthUser(session.user)); setSubscribed(true); }
+      else { setAuthUser(null); }
+    });
+    return () => { mounted = false; sub?.subscription?.unsubscribe?.(); };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(()=>{safeSet("cycleDay",cycleDay);},[cycleDay]);
   useEffect(()=>{safeSet("cycleStartDate",cycleStartDate);},[cycleStartDate]);
@@ -344,9 +367,7 @@ export default function App() {
     setVarietyTexts(getVarietyTexts(weekUsed));
     const tl=taskLog.find(l=>l.date===getToday());
     if(tl){setTaskDone(true);setTaskRating(tl.rating);}
-    // Restore auth session from storage
-    const stored = safeGet("authUser","");
-    if (stored&&!authUser) { try { setAuthUser(JSON.parse(stored)); } catch(e) {} }
+    // (Auth session is restored via Supabase in a dedicated effect above.)
     // Auto-load today's text and activity
     pickDailyText(0);
     pickDailyActivity(0);
@@ -548,34 +569,25 @@ export default function App() {
 
   const handleLogin = async () => {
     if (isPreviewMode) {
-      // Preview mode — skip auth, go straight in
-      setAuthUser({ id:"preview", email:authEmail||"preview@betterpartner.app", name:"Preview" });
-      safeSet("authUser", JSON.stringify({ id:"preview", email:authEmail||"preview@betterpartner.app", name:"Preview" }));
+      // Dev bypass — skip auth, go straight in
+      setAuthUser({ id:"preview", email:authEmail||"preview@outstandingpartner.app", name:"Preview" });
       setSubscribed(true); safeSet("subscribed","1");
       return;
     }
     if (!authEmail||!authPassword) { setAuthError("Please enter your email and password."); return; }
     setAuthLoading(true); setAuthError("");
     try {
-      const res = await fetch(`${API_URL}/api/auth/login`, {
-        method:"POST", headers:{"Content-Type":"application/json","x-app-secret":APP_SECRET},
-        body: JSON.stringify({ email:authEmail, password:authPassword }),
-      });
-      const data = await res.json();
-      if (!res.ok) { setAuthError(data.error||"Login failed. Check your email and password."); setAuthLoading(false); return; }
-      setAuthUser({ id:data.userId, email:authEmail, name:data.name });
-      safeSet("authToken", data.token);
-      safeSet("authUser", JSON.stringify({ id:data.userId, email:authEmail, name:data.name }));
-      if (data.subscribed) { setSubscribed(true); safeSet("subscribed","1"); }
+      const { data, error } = await signIn(authEmail, authPassword);
+      if (error) { setAuthError(error.message||"Login failed. Check your email and password."); setAuthLoading(false); return; }
+      setAuthUser(toAuthUser(data.user));
+      setSubscribed(true); safeSet("subscribed","1"); // TEMP: real entitlement check arrives with RevenueCat (Phase 5)
     } catch(e) { setAuthError("Connection error. Please try again."); }
     setAuthLoading(false);
   };
 
   const handleSignup = async () => {
     if (isPreviewMode) {
-      // Preview mode — skip auth
-      setAuthUser({ id:"preview", email:authEmail||"preview@betterpartner.app", name:authName||"Preview" });
-      safeSet("authUser", JSON.stringify({ id:"preview", email:authEmail, name:authName||"Preview" }));
+      setAuthUser({ id:"preview", email:authEmail||"preview@outstandingpartner.app", name:authName||"Preview" });
       setSubscribed(true); safeSet("subscribed","1");
       return;
     }
@@ -584,15 +596,17 @@ export default function App() {
     if (!authPassword||authPassword.length<8) { setAuthError("Password must be at least 8 characters."); return; }
     setAuthLoading(true); setAuthError("");
     try {
-      const res = await fetch(`${API_URL}/api/auth/signup`, {
-        method:"POST", headers:{"Content-Type":"application/json","x-app-secret":APP_SECRET},
-        body: JSON.stringify({ email:authEmail, password:authPassword, name:authName }),
-      });
-      const data = await res.json();
-      if (!res.ok) { setAuthError(data.error||"Signup failed. Try a different email."); setAuthLoading(false); return; }
-      setAuthUser({ id:data.userId, email:authEmail, name:authName });
-      safeSet("authToken", data.token);
-      safeSet("authUser", JSON.stringify({ id:data.userId, email:authEmail, name:authName }));
+      const { data, error } = await signUp(authEmail, authPassword, authName);
+      if (error) { setAuthError(error.message||"Signup failed. Try a different email."); setAuthLoading(false); return; }
+      if (data.session && data.user) {
+        // Email confirmation disabled → session is live immediately.
+        setAuthUser(toAuthUser(data.user));
+        setSubscribed(true); safeSet("subscribed","1"); // TEMP until RevenueCat (Phase 5)
+      } else {
+        // Email confirmation enabled → user must confirm before signing in.
+        setAuthError("Account created — check your email to confirm, then sign in.");
+        setAuthScreen("login");
+      }
     } catch(e) { setAuthError("Connection error. Please try again."); }
     setAuthLoading(false);
   };
@@ -602,11 +616,8 @@ export default function App() {
     if (!authEmail) { setAuthError("Enter your email address first."); return; }
     setAuthLoading(true); setAuthError("");
     try {
-      await fetch(`${API_URL}/api/auth/forgot`, {
-        method:"POST", headers:{"Content-Type":"application/json","x-app-secret":APP_SECRET},
-        body: JSON.stringify({ email:authEmail }),
-      });
-      setAuthError("Reset link sent — check your inbox.");
+      const { error } = await sendPasswordReset(authEmail);
+      setAuthError(error ? (error.message||"Could not send reset email.") : "Reset link sent — check your inbox.");
     } catch(e) { setAuthError("Connection error. Please try again."); }
     setAuthLoading(false);
   };
@@ -1108,7 +1119,9 @@ PRO TIP: [one insider detail that elevates this from good to unforgettable]`);
                       '✓ Outstanding Partner — $21.99/month'
                     </div>
                   </div>
-                  <button onClick={()=>{
+                  <button onClick={async()=>{
+                    if (!isPreviewMode) { try { await signOutUser(); } catch(e) {} }
+                    try { Object.keys(localStorage).forEach(k=>{ if(k.startsWith('op_hydrated_')) sessionStorage.removeItem(k); }); } catch(e) {}
                     safeSet("authToken",""); safeSet("authUser",""); safeSet("subscribed",""); safeSet("subTier","basic");
                     setAuthUser(null); setSubscribed(false); setSubTier("basic"); setAuthEmail(""); setAuthPassword("");
                   }} style={{background:"#111",border:"1px solid #333",borderRadius:10,padding:"8px 14px",fontSize:12,color:"#888",cursor:"pointer"}}>

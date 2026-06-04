@@ -125,9 +125,14 @@ export function copyText(text, onSuccess) {
   }
 }
 
+// Optional change handler — set by the cloud-sync hook to schedule debounced uploads.
+let _onStorageChange = null;
+export function setStorageChangeHandler(fn) { _onStorageChange = fn; }
+
 export function safeSet(key, val) {
   _store[key] = val;
   try { localStorage.setItem(key, val); } catch(e) {}
+  if (_onStorageChange) { try { _onStorageChange(key, val); } catch(e) {} }
 }
 
 export function getChineseZodiac(year) {

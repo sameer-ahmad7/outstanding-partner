@@ -87,12 +87,11 @@ export const API_URL = typeof process !== "undefined" && process.env?.REACT_APP_
 export const APP_SECRET = typeof process !== "undefined" && process.env?.REACT_APP_APP_SECRET ? process.env.REACT_APP_APP_SECRET : "";
 
 // NOTE: AI generation is intentionally disabled in this build.
-// The previous implementation called the Anthropic API directly from the client,
-// which would expose an API key. It will be re-enabled in a later phase via a
-// secure Supabase Edge Function (server-side key, premium-gated) — see ai.service.js.
-
-export async function fetchAI(_prompt) {
-  return "✨ AI suggestions are coming soon — this feature is being set up securely.";
+// AI generation runs through the secure `ai-generate` Supabase Edge Function
+// (server-side key). This client helper just delegates to ai.service.
+export async function fetchAI(prompt) {
+  const { generateAI } = await import('../services/ai.service.js');
+  return generateAI(prompt);
 }
 
 // ─── Safe Storage (works in artifacts + browser) ─────────────────────────────

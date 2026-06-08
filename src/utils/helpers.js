@@ -87,11 +87,11 @@ export const API_URL = typeof process !== "undefined" && process.env?.REACT_APP_
 export const APP_SECRET = typeof process !== "undefined" && process.env?.REACT_APP_APP_SECRET ? process.env.REACT_APP_APP_SECRET : "";
 
 // NOTE: AI generation is intentionally disabled in this build.
-// AI generation runs through the secure `ai-generate` Supabase Edge Function
-// (server-side key). This client helper just delegates to ai.service.
-export async function fetchAI(prompt) {
-  const { generateAI } = await import('../services/ai.service.js');
-  return generateAI(prompt);
+// AI is ON HOLD per client request. The secure `ai-generate` Supabase Edge Function
+// and src/services/ai.service.js remain in the repo, ready to re-enable later by
+// restoring the delegate below:  return (await import('../services/ai.service.js')).generateAI(prompt);
+export async function fetchAI(_prompt) {
+  return "";
 }
 
 // ─── Safe Storage (works in artifacts + browser) ─────────────────────────────

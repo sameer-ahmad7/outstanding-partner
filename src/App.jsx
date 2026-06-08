@@ -3,6 +3,8 @@ import { hasSupabase } from './services/supabaseClient.js';
 import { signIn, signUp, signOutUser, sendPasswordReset, getSession, onAuthChange, toAuthUser } from './services/auth.service.js';
 import { useCloudSync } from './hooks/useCloudSync.js';
 import { deleteAccount } from './services/account.service.js';
+import { useSubscription } from './hooks/useSubscription.js';
+import { rcLogOut } from './services/revenuecat.service.js';
 import { initStatusBar, isNative } from './services/platform.service.js';
 import SupportScreen from './components/legal/SupportScreen.jsx';
 import PrivacyPolicyScreen from './components/legal/PrivacyPolicyScreen.jsx';
@@ -94,6 +96,8 @@ export default function App() {
   const [authLoading,setAuthLoading] = useState(false);
   const [authError,setAuthError] = useState("");
   const [subscribed,setSubscribed] = useState(false); // fresh start
+  const [selectedPlan,setSelectedPlan] = useState("annual"); // paywall: 'annual' | 'monthly'
+  const [subMsg,setSubMsg] = useState(""); // paywall status/error message
   const [subTier,setSubTier] = useState("basic"); // fresh start // "basic" | "premium"
   const [subLoading,setSubLoading] = useState(false);
   const [cycleDay,setCycleDay] = useState(1); // fresh start
@@ -172,6 +176,7 @@ export default function App() {
   const handleDeleteAccount = async () => {
     setDeleteLoading(true);
     try { if (!isPreviewMode) await deleteAccount(); } catch(e) { /* proceed to local wipe regardless */ }
+    try { await rcLogOut(); } catch(e) {}
     try { if (!isPreviewMode) await signOutUser(); } catch(e) {}
     try { localStorage.clear(); sessionStorage.clear(); } catch(e) {}
     setAuthUser(null); setSubscribed(false); setSubTier("basic");
@@ -253,23 +258,32 @@ export default function App() {
   const numerology = lifePathNum ? NUMEROLOGY[lifePathNum] : null;
   // Dev-only bypass: skip real auth when explicitly enabled, or when Supabase isn't configured.
   const isPreviewMode = (import.meta.env.VITE_DEV_AUTH_BYPASS === 'true') || !hasSupabase;
-  const isPremium = subTier === "premium" || isPreviewMode;
+  // Subscription-only app: an active subscription unlocks everything (no free tier).
+  const isPremium = subscribed || isPreviewMode;
+
+  // RevenueCat entitlement state (native). Drives the hard paywall + access.
+  const subscription = useSubscription(authUser?.id);
+  useEffect(() => {
+    if (isPreviewMode) { setSubscribed(true); return; }
+    setSubscribed(subscription.isSubscribed);
+  }, [subscription.isSubscribed, isPreviewMode]);
 
   // Cloud sync: hydrate from / push to Supabase while authenticated (Supabase mode only).
   useCloudSync(authUser?.id, !isPreviewMode && !!authUser);
 
   // Restore Supabase session on launch + subscribe to auth changes.
+  // (Subscription status comes from RevenueCat, not set here.)
   useEffect(() => {
     if (isPreviewMode) return;
     let mounted = true;
     getSession().then(({ data }) => {
       const u = data?.session?.user;
-      if (mounted && u) { setAuthUser(toAuthUser(u)); setSubscribed(true); }
+      if (mounted && u) setAuthUser(toAuthUser(u));
     });
     const { data: sub } = onAuthChange((session) => {
       if (!mounted) return;
-      if (session?.user) { setAuthUser(toAuthUser(session.user)); setSubscribed(true); }
-      else { setAuthUser(null); }
+      if (session?.user) setAuthUser(toAuthUser(session.user));
+      else setAuthUser(null);
     });
     return () => { mounted = false; sub?.subscription?.unsubscribe?.(); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
@@ -614,7 +628,7 @@ export default function App() {
       const { data, error } = await signIn(authEmail, authPassword);
       if (error) { setAuthError(error.message||"Login failed. Check your email and password."); setAuthLoading(false); return; }
       setAuthUser(toAuthUser(data.user));
-      setSubscribed(true); safeSet("subscribed","1"); // TEMP: real entitlement check arrives with RevenueCat (Phase 5)
+      // Access is granted by the RevenueCat 'premium' entitlement (see useSubscription).
     } catch(e) { setAuthError("Connection error. Please try again."); }
     setAuthLoading(false);
   };
@@ -635,7 +649,7 @@ export default function App() {
       if (data.session && data.user) {
         // Email confirmation disabled → session is live immediately.
         setAuthUser(toAuthUser(data.user));
-        setSubscribed(true); safeSet("subscribed","1"); // TEMP until RevenueCat (Phase 5)
+        // Access is granted by the RevenueCat 'premium' entitlement (see useSubscription).
       } else {
         // Email confirmation enabled → user must confirm before signing in.
         setAuthError("Account created — check your email to confirm, then sign in.");
@@ -1154,6 +1168,7 @@ PRO TIP: [one insider detail that elevates this from good to unforgettable]`);
                     </div>
                   </div>
                   <button onClick={async()=>{
+                    try { await rcLogOut(); } catch(e) {}
                     if (!isPreviewMode) { try { await signOutUser(); } catch(e) {} }
                     try { Object.keys(localStorage).forEach(k=>{ if(k.startsWith('op_hydrated_')) sessionStorage.removeItem(k); }); } catch(e) {}
                     safeSet("authToken",""); safeSet("authUser",""); safeSet("subscribed",""); safeSet("subTier","basic");
@@ -1762,63 +1777,79 @@ PRO TIP: [one insider detail that elevates this from good to unforgettable]`);
         </div>
       )}
 
-      {/* ── SUBSCRIPTION GATE ──────────────────────────────────── */}
-      {authUser&&!subscribed&&(
-        <div style={{position:"fixed",inset:0,background:"#0d0d0d",zIndex:9998,display:"flex",flexDirection:"column",justifyContent:"center",padding:"32px 24px",boxSizing:"border-box",overflowY:"auto"}}>
-
-          {/* Header */}
-          <div style={{textAlign:"center",marginBottom:20}}>
-            <div style={{fontSize:11,color:"#c0392b",textTransform:"uppercase",letterSpacing:"0.16em",fontWeight:700,marginBottom:8}}>Better Husband / Boyfriend</div>
-            <div style={{fontSize:26,fontWeight:700,fontFamily:"'Playfair Display',serif",lineHeight:1.2,marginBottom:6}}>Be the partner she brags about.</div>
-            <div style={{fontSize:13,color:"#666",lineHeight:1.6}}>7 days free. Cancel anytime. No commitment.</div>
-          </div>
-
-          {/* Psychology badge */}
-          <div style={{background:"#0a1a0a",border:"1px solid #27ae6030",borderRadius:12,padding:"10px 14px",marginBottom:20,display:"flex",gap:10,alignItems:"center"}}>
-            <span style={{fontSize:18}}>🧠</span>
-            <div style={{fontSize:12,color:"#27ae60",fontWeight:700}}>Developed in consultation with psychologists · Built on relationship science</div>
-          </div>
-
-          {/* Single plan */}
-          <div style={{background:"#1a1a1a",border:"2px solid #c0392b60",borderRadius:18,padding:22,marginBottom:16}}>
-            <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:14}}>
+      {/* ── SUBSCRIPTION GATE (hard paywall — subscription-only) ── */}
+      {authUser&&!subscribed&&(()=>{
+        const off=subscription.offering;
+        const pkgs=(off&&off.availablePackages)||[];
+        const monthly=pkgs.find(p=>p.packageType==='MONTHLY')||pkgs.find(p=>/month/i.test(p.identifier||''));
+        const annual=pkgs.find(p=>p.packageType==='ANNUAL')||pkgs.find(p=>/(annual|year)/i.test(p.identifier||''));
+        const monthlyPrice=(monthly&&monthly.product&&monthly.product.priceString)||'$21.99';
+        const annualPrice=(annual&&annual.product&&annual.product.priceString)||'$224';
+        const chosen=selectedPlan==='annual'?annual:monthly;
+        const doSubscribe=async()=>{
+          setSubMsg('');
+          if(isPreviewMode){ setSubscribed(true); return; }
+          if(!chosen){ setSubMsg('Plans are still loading — please try again in a moment.'); return; }
+          try{ const ok=await subscription.purchase(chosen); if(ok){ setSubscribed(true); } else { setSubMsg('Purchase was not completed.'); } }
+          catch(e){ const m=(e&&e.message)||''; if(!/cancel/i.test(m)) setSubMsg(m||'Purchase failed. Please try again.'); }
+        };
+        const doRestore=async()=>{
+          setSubMsg('');
+          try{ const ok=await subscription.restore(); if(ok){ setSubscribed(true); } else { setSubMsg('No active subscription found to restore.'); } }
+          catch(e){ setSubMsg('Could not restore purchases.'); }
+        };
+        const planCard=(k,label,price,per,note,badge)=>{
+          const sel=selectedPlan===k;
+          return (
+            <button onClick={()=>setSelectedPlan(k)} style={{textAlign:'left',width:'100%',background:sel?'#1a1a1a':'#141414',border:`2px solid ${sel?'#c0392b':'#2a2a2a'}`,borderRadius:14,padding:'14px 16px',marginBottom:10,cursor:'pointer',display:'flex',justifyContent:'space-between',alignItems:'center'}}>
               <div>
-                <div style={{fontSize:28,fontWeight:900,color:"#f0ece4",lineHeight:1}}>$21.99<span style={{fontSize:13,color:"#666",fontWeight:400}}>/mo</span></div>
-                <div style={{fontSize:12,color:"#27ae60",fontWeight:600,marginTop:4}}>✓ 7 days free — then $21.99/month</div>
+                <div style={{fontSize:15,fontWeight:700,color:'#f0ece4'}}>{label}</div>
+                <div style={{fontSize:11,color:'#27ae60',fontWeight:600,marginTop:3}}>{note}</div>
               </div>
-              <div style={{background:"#c0392b",borderRadius:8,padding:"4px 10px",fontSize:10,color:"#fff",fontWeight:700}}>FULL ACCESS</div>
-            </div>
-            {[
-              "200 phase-matched texts — fresh every 2-3 days",
-              "60 at-home activities matched to her cycle",
-              "100 date ideas — every budget and energy level",
-              "Daily missions tailored to her phase",
-              "Full cycle tracker — what she needs each week",
-              "30/60/90-Day Partner Challenge",
-              "Zodiac + numerology personality profile",
-              "Know Her profile — favourites, notes, needs",
-              "New content added every month",
-            ].map((f,i)=>(
-              <div key={i} style={{display:"flex",gap:10,marginBottom:6,alignItems:"flex-start"}}>
-                <span style={{color:"#27ae60",fontSize:13,flexShrink:0,marginTop:1}}>✓</span>
-                <span style={{fontSize:12,color:"#ccc"}}>{f}</span>
+              <div style={{textAlign:'right'}}>
+                <div style={{fontSize:18,fontWeight:900,color:'#f0ece4'}}>{price}<span style={{fontSize:11,color:'#666',fontWeight:400}}>{per}</span></div>
+                {badge&&<div style={{fontSize:9,color:'#fff',background:'#c0392b',borderRadius:6,padding:'2px 6px',marginTop:4,display:'inline-block',fontWeight:700}}>{badge}</div>}
               </div>
-            ))}
-            <button onClick={()=>handleSubscribe("basic")} disabled={subLoading} style={{width:"100%",background:"linear-gradient(135deg,#c0392b,#8e44ad)",color:"#fff",border:"none",borderRadius:12,padding:"15px 14px",fontSize:15,fontWeight:800,cursor:"pointer",marginTop:16,opacity:subLoading?0.7:1,letterSpacing:"0.02em"}}>
-              {isPreviewMode?"Enter App →":"Start 7-Day Free Trial →"}
             </button>
+          );
+        };
+        return (
+        <div style={{position:"fixed",inset:0,background:"#0d0d0d",zIndex:9998,display:"flex",flexDirection:"column",justifyContent:"center",padding:"max(32px,env(safe-area-inset-top)) 24px calc(24px + env(safe-area-inset-bottom))",boxSizing:"border-box",overflowY:"auto"}}>
+          <div style={{textAlign:"center",marginBottom:16}}>
+            <div style={{fontSize:11,color:"#c0392b",textTransform:"uppercase",letterSpacing:"0.16em",fontWeight:700,marginBottom:8}}>Better Husband / Boyfriend</div>
+            <div style={{fontSize:24,fontWeight:700,fontFamily:"'Playfair Display',serif",lineHeight:1.2,marginBottom:6}}>Be the partner she brags about.</div>
+            <div style={{fontSize:13,color:"#888",lineHeight:1.6}}>Start with a 7-day free trial. Cancel anytime.</div>
           </div>
 
-          <div style={{fontSize:11,color:"#333",textAlign:"center",lineHeight:1.7,marginBottom:10}}>
-            {isPreviewMode?"Preview mode — no payment required.":"No charge for 7 days. Cancel anytime before trial ends."}
+          <div style={{background:"#0a1a0a",border:"1px solid #27ae6030",borderRadius:12,padding:"9px 14px",marginBottom:16,display:"flex",gap:10,alignItems:"center"}}>
+            <span style={{fontSize:16}}>🧠</span>
+            <div style={{fontSize:11,color:"#27ae60",fontWeight:700}}>Built with psychologists · relationship science</div>
           </div>
-          <button onClick={()=>setAuthUser(null)} style={{background:"transparent",border:"none",color:"#333",fontSize:11,cursor:"pointer",textAlign:"center",width:"100%"}}>Sign out</button>
-          <div style={{display:"flex",justifyContent:"center",gap:18,marginTop:14}}>
-            <button onClick={()=>setLegalView("privacy")} style={{background:"transparent",border:"none",color:"#444",fontSize:11,cursor:"pointer",textDecoration:"underline"}}>Privacy Policy</button>
-            <button onClick={()=>setLegalView("support")} style={{background:"transparent",border:"none",color:"#444",fontSize:11,cursor:"pointer",textDecoration:"underline"}}>Support</button>
+
+          {planCard('annual','Yearly',annualPrice,'/yr','7 days free, then billed yearly','BEST VALUE')}
+          {planCard('monthly','Monthly',monthlyPrice,'/mo','7 days free, then billed monthly')}
+
+          {subMsg&&<div style={{fontSize:12,color:"#e74c3c",textAlign:"center",margin:"2px 0 8px"}}>{subMsg}</div>}
+
+          <button onClick={doSubscribe} disabled={subscription.busy} style={{width:"100%",background:"linear-gradient(135deg,#c0392b,#8e44ad)",color:"#fff",border:"none",borderRadius:12,padding:"16px 14px",fontSize:15,fontWeight:800,cursor:"pointer",marginTop:4,opacity:subscription.busy?0.7:1,letterSpacing:"0.02em"}}>
+            {subscription.busy?"Processing…":isPreviewMode?"Enter App →":"Start 7-Day Free Trial →"}
+          </button>
+          <button onClick={doRestore} disabled={subscription.busy} style={{width:"100%",background:"transparent",border:"none",color:"#888",fontSize:13,cursor:"pointer",padding:"11px"}}>Restore Purchases</button>
+
+          <div style={{fontSize:10,color:"#555",textAlign:"center",lineHeight:1.6,margin:"4px 0 12px"}}>
+            Payment is charged to your account at confirmation. Subscriptions auto-renew unless turned off at least 24 hours before the end of the current period; manage or cancel anytime in your account settings.
           </div>
+
+          <div style={{display:"flex",justifyContent:"center",gap:16,flexWrap:"wrap",marginBottom:10}}>
+            <button onClick={()=>window.open('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/','_blank')} style={{background:"transparent",border:"none",color:"#777",fontSize:11,cursor:"pointer",textDecoration:"underline"}}>Terms of Use</button>
+            <button onClick={()=>setLegalView("privacy")} style={{background:"transparent",border:"none",color:"#777",fontSize:11,cursor:"pointer",textDecoration:"underline"}}>Privacy Policy</button>
+            <button onClick={()=>setLegalView("support")} style={{background:"transparent",border:"none",color:"#777",fontSize:11,cursor:"pointer",textDecoration:"underline"}}>Support</button>
+          </div>
+
+          <button onClick={async()=>{ try{await rcLogOut();}catch(e){} if(!isPreviewMode){try{await signOutUser();}catch(e){}} setAuthUser(null); }} style={{background:"transparent",border:"none",color:"#444",fontSize:11,cursor:"pointer",textAlign:"center",width:"100%"}}>Sign out</button>
         </div>
-      )}
+        );
+      })()}
 
       {/* ── ONBOARDING (after auth + subscription) ─────────────── */}
       {authUser&&subscribed&&(!onboarded||replayGuide)&&(()=>{

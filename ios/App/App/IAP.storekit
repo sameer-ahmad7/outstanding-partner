@@ -24,7 +24,7 @@
     "_developerTeamID" : "MHWR5UKD73",
     "_disableDialogs" : false,
     "_failTransactionsEnabled" : false,
-    "_lastSynchronizedDate" : 802792754.02333403,
+    "_lastSynchronizedDate" : 802795029.36370897,
     "_locale" : "en_US",
     "_renewalBillingIssuesEnabled" : false,
     "_storefront" : "USA",
@@ -52,7 +52,12 @@
           "familyShareable" : false,
           "groupNumber" : 1,
           "internalID" : "6778460668",
-          "introductoryOffer" : null,
+          "introductoryOffer" : {
+            "internalID" : "4BF0C06E",
+            "numberOfPeriods" : 1,
+            "paymentMode" : "free",
+            "subscriptionPeriod" : "P1W"
+          },
           "localizations" : [
             {
               "description" : "Full access, billed monthly. 7-day free trial.",
@@ -81,7 +86,7 @@
           "groupNumber" : 2,
           "internalID" : "6778466584",
           "introductoryOffer" : {
-            "internalID" : "E413295A",
+            "internalID" : "503D7574",
             "numberOfPeriods" : 1,
             "paymentMode" : "free",
             "subscriptionPeriod" : "P1W"

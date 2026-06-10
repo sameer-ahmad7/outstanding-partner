@@ -258,6 +258,8 @@ export default function App() {
   const numerology = lifePathNum ? NUMEROLOGY[lifePathNum] : null;
   // Dev-only bypass: skip real auth when explicitly enabled, or when Supabase isn't configured.
   const isPreviewMode = (import.meta.env.VITE_DEV_AUTH_BYPASS === 'true') || !hasSupabase;
+  // Dev-only screenshot helper (default false; baked false in production builds).
+  const SCREENSHOT = import.meta.env.VITE_SCREENSHOT === 'true';
   // Subscription-only app: an active subscription unlocks everything (no free tier).
   const isPremium = subscribed || isPreviewMode;
 
@@ -268,13 +270,23 @@ export default function App() {
     setSubscribed(subscription.isSubscribed);
   }, [subscription.isSubscribed, isPreviewMode]);
 
+  // Dev-only (store screenshots): VITE_SCREENSHOT=true drives a deterministic screen without login.
+  //  - bypass=false -> paywall;  bypass=true -> app at VITE_SCREENSHOT_TAB. No real data access (RLS).
+  useEffect(() => {
+    if (!SCREENSHOT) return;
+    setAuthUser({ id: 'screenshot', email: 'demo@outstandingpartner.app', name: 'Demo' });
+    setOnboarded(true); safeSet('onboarded', '1');
+    const t = import.meta.env.VITE_SCREENSHOT_TAB;
+    if (t) setTab(t);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Cloud sync: hydrate from / push to Supabase while authenticated (Supabase mode only).
   useCloudSync(authUser?.id, !isPreviewMode && !!authUser);
 
   // Restore Supabase session on launch + subscribe to auth changes.
   // (Subscription status comes from RevenueCat, not set here.)
   useEffect(() => {
-    if (isPreviewMode) return;
+    if (isPreviewMode || SCREENSHOT) return;
     let mounted = true;
     getSession().then(({ data }) => {
       const u = data?.session?.user;

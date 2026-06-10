@@ -1,0 +1,12 @@
+{
+  "hosting": {
+    "public": "web-legal",
+    "cleanUrls": true,
+    "trailingSlash": false,
+    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "rewrites": [
+      { "source": "/privacy", "destination": "/privacy.html" },
+      { "source": "/support", "destination": "/support.html" }
+    ]
+  }
+}

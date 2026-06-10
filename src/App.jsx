@@ -306,6 +306,17 @@ export default function App() {
     return () => { if (handle) handle.remove(); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // Re-check the subscription entitlement when the app returns to the foreground,
+  // so a cancellation/expiry that happened while backgrounded flips access off.
+  useEffect(() => {
+    if (!isNative()) return;
+    let handle;
+    import('@capacitor/app').then(({ App: CapApp }) => {
+      CapApp.addListener('resume', () => { subscription.refresh?.(); }).then((h) => { handle = h; });
+    });
+    return () => { if (handle) handle.remove(); };
+  }, [subscription.refresh]);
+
   useEffect(()=>{safeSet("cycleDay",cycleDay);},[cycleDay]);
   useEffect(()=>{safeSet("cycleStartDate",cycleStartDate);},[cycleStartDate]);
   useEffect(()=>{safeSet("taskLog",JSON.stringify(taskLog));},[taskLog]);
@@ -1786,6 +1797,18 @@ PRO TIP: [one insider detail that elevates this from good to unforgettable]`);
         const monthlyPrice=(monthly&&monthly.product&&monthly.product.priceString)||'$21.99';
         const annualPrice=(annual&&annual.product&&annual.product.priceString)||'$224';
         const chosen=selectedPlan==='annual'?annual:monthly;
+        const trialText=(pkg)=>{
+          try{
+            const ip=pkg&&pkg.product&&pkg.product.introPrice;
+            if(ip&&Number(ip.price)===0&&ip.periodNumberOfUnits){
+              const u=String(ip.periodUnit||'').toLowerCase();
+              const unit=u.includes('day')?'day':u.includes('week')?'week':u.includes('month')?'month':u.includes('year')?'year':u;
+              const n=ip.periodNumberOfUnits;
+              return `${n}-${unit}${n>1?'s':''} free trial`;
+            }
+          }catch(e){}
+          return '7-day free trial';
+        };
         const doSubscribe=async()=>{
           setSubMsg('');
           if(isPreviewMode){ setSubscribed(true); return; }
@@ -1826,8 +1849,8 @@ PRO TIP: [one insider detail that elevates this from good to unforgettable]`);
             <div style={{fontSize:11,color:"#27ae60",fontWeight:700}}>Built with psychologists · relationship science</div>
           </div>
 
-          {planCard('annual','Yearly',annualPrice,'/yr','7 days free, then billed yearly','BEST VALUE')}
-          {planCard('monthly','Monthly',monthlyPrice,'/mo','7 days free, then billed monthly')}
+          {planCard('annual','Yearly',annualPrice,'/yr',`${trialText(annual)}, then billed yearly`,'BEST VALUE')}
+          {planCard('monthly','Monthly',monthlyPrice,'/mo',`${trialText(monthly)}, then billed monthly`)}
 
           {subMsg&&<div style={{fontSize:12,color:"#e74c3c",textAlign:"center",margin:"2px 0 8px"}}>{subMsg}</div>}
 

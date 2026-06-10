@@ -1795,7 +1795,7 @@ PRO TIP: [one insider detail that elevates this from good to unforgettable]`);
         const monthly=pkgs.find(p=>p.packageType==='MONTHLY')||pkgs.find(p=>/month/i.test(p.identifier||''));
         const annual=pkgs.find(p=>p.packageType==='ANNUAL')||pkgs.find(p=>/(annual|year)/i.test(p.identifier||''));
         const monthlyPrice=(monthly&&monthly.product&&monthly.product.priceString)||'$21.99';
-        const annualPrice=(annual&&annual.product&&annual.product.priceString)||'$224';
+        const annualPrice=(annual&&annual.product&&annual.product.priceString)||'$224.99';
         const chosen=selectedPlan==='annual'?annual:monthly;
         const trialText=(pkg)=>{
           try{

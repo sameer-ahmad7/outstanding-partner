@@ -1765,7 +1765,7 @@ PRO TIP: [one insider detail that elevates this from good to unforgettable]`);
                 </div>
               </div>
               <div style={{display:"flex",flexDirection:"column",gap:8,marginBottom:24,padding:"12px 16px",background:"#1a1a1a",borderRadius:12,border:"1px solid #2a2a2a"}}>
-                {["200+ phase-matched texts — new ones added every month","100 date ideas + 60 at-home activities","AI coach for real situations","Full profile: zodiac, numerology, and cycle tracking","Desktop analytics dashboard"].map((f,i)=>(
+                {["200+ phase-matched texts — new ones added every month","100 date ideas + 60 at-home activities","Daily missions tailored to her cycle phase","Full profile: zodiac, numerology, and cycle tracking","30/60/90-day partner challenge"].map((f,i)=>(
                   <div key={i} style={{display:"flex",gap:10,alignItems:"center"}}>
                     <span style={{color:"#27ae60",fontWeight:700,fontSize:14}}>✓</span>
                     <span style={{fontSize:12,color:"#aaa"}}>{f}</span>

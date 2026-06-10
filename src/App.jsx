@@ -1836,9 +1836,13 @@ PRO TIP: [one insider detail that elevates this from good to unforgettable]`);
         const doSubscribe=async()=>{
           setSubMsg('');
           if(isPreviewMode){ setSubscribed(true); return; }
-          if(!chosen){ setSubMsg('Plans are still loading — please try again in a moment.'); return; }
+          if(!chosen){
+            setSubMsg('Subscriptions aren’t available right now. Check your connection and try again in a moment.');
+            try{ await subscription.refresh?.(); }catch(e){}
+            return;
+          }
           try{ const ok=await subscription.purchase(chosen); if(ok){ setSubscribed(true); } else { setSubMsg('Purchase was not completed.'); } }
-          catch(e){ const m=(e&&e.message)||''; if(!/cancel/i.test(m)) setSubMsg(m||'Purchase failed. Please try again.'); }
+          catch(e){ const m=(e&&e.message)||''; if(!/cancel|defer/i.test(m)) setSubMsg(m||'Purchase failed. Please try again.'); }
         };
         const doRestore=async()=>{
           setSubMsg('');

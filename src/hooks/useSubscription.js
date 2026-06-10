@@ -13,7 +13,14 @@ export function useSubscription(userId) {
     const info = await RC.getCustomerInfo();
     if (info) setIsSubscribed(RC.isPremiumInfo(info));
     const off = await RC.getCurrentOffering();
-    if (off) setOffering(off);
+    if (off) {
+      setOffering(off);
+      const n = off.availablePackages?.length || 0;
+      console.log('[subscription] offering "' + off.identifier + '" loaded with ' + n + ' purchasable package(s)');
+      if (n === 0) console.warn('[subscription] 0 packages — App Store products not loadable (check Paid Apps Agreement / product status / sandbox account).');
+    } else {
+      console.warn('[subscription] no current offering returned by RevenueCat');
+    }
   }, []);
 
   // Configure once on mount (native only).

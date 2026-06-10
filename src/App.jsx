@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from "react";
 import { hasSupabase } from './services/supabaseClient.js';
 import { signIn, signUp, signOutUser, sendPasswordReset, getSession, onAuthChange, toAuthUser } from './services/auth.service.js';
 import { useCloudSync } from './hooks/useCloudSync.js';
-import { deleteAccount } from './services/account.service.js';
+import { deleteAccount, redeemAccessCode } from './services/account.service.js';
+import { getUserSubscription } from './services/appData.service.js';
 import { useSubscription } from './hooks/useSubscription.js';
 import { rcLogOut } from './services/revenuecat.service.js';
 import { initStatusBar, isNative } from './services/platform.service.js';
@@ -96,8 +97,11 @@ export default function App() {
   const [authLoading,setAuthLoading] = useState(false);
   const [authError,setAuthError] = useState("");
   const [subscribed,setSubscribed] = useState(false); // fresh start
+  const [lifetimeAccess,setLifetimeAccess] = useState(false); // granted via redeemed access code
   const [selectedPlan,setSelectedPlan] = useState("annual"); // paywall: 'annual' | 'monthly'
   const [subMsg,setSubMsg] = useState(""); // paywall status/error message
+  const [codeInput,setCodeInput] = useState(""); // redeem-code field
+  const [redeeming,setRedeeming] = useState(false);
   const [subTier,setSubTier] = useState("basic"); // fresh start // "basic" | "premium"
   const [subLoading,setSubLoading] = useState(false);
   const [cycleDay,setCycleDay] = useState(1); // fresh start
@@ -267,8 +271,16 @@ export default function App() {
   const subscription = useSubscription(authUser?.id);
   useEffect(() => {
     if (isPreviewMode) { setSubscribed(true); return; }
-    setSubscribed(subscription.isSubscribed);
-  }, [subscription.isSubscribed, isPreviewMode]);
+    setSubscribed(subscription.isSubscribed || lifetimeAccess);
+  }, [subscription.isSubscribed, lifetimeAccess, isPreviewMode]);
+
+  // Lifetime access (redeemed code) — read the flag from the subscription mirror on login.
+  useEffect(() => {
+    if (isPreviewMode || !authUser?.id) { setLifetimeAccess(false); return; }
+    getUserSubscription(authUser.id)
+      .then((sub) => setLifetimeAccess(!!sub?.lifetime))
+      .catch(() => {});
+  }, [authUser?.id, isPreviewMode]);
 
   // Dev-only (store screenshots): VITE_SCREENSHOT=true drives a deterministic screen without login.
   //  - bypass=false -> paywall;  bypass=true -> app at VITE_SCREENSHOT_TAB. No real data access (RLS).
@@ -1833,6 +1845,17 @@ PRO TIP: [one insider detail that elevates this from good to unforgettable]`);
           try{ const ok=await subscription.restore(); if(ok){ setSubscribed(true); } else { setSubMsg('No active subscription found to restore.'); } }
           catch(e){ setSubMsg('Could not restore purchases.'); }
         };
+        const doRedeem=async()=>{
+          setSubMsg('');
+          if(!codeInput.trim()){ setSubMsg('Enter your code.'); return; }
+          setRedeeming(true);
+          try{
+            const res=await redeemAccessCode(codeInput.trim());
+            if(res&&res.ok){ setLifetimeAccess(true); setSubscribed(true); }
+            else { setSubMsg((res&&res.error)||'Invalid or already-used code.'); }
+          }catch(e){ setSubMsg('Could not redeem code.'); }
+          finally{ setRedeeming(false); }
+        };
         const planCard=(k,label,price,per,note,badge)=>{
           const sel=selectedPlan===k;
           return (
@@ -1870,6 +1893,11 @@ PRO TIP: [one insider detail that elevates this from good to unforgettable]`);
             {subscription.busy?"Processing…":isPreviewMode?"Enter App →":"Start 7-Day Free Trial →"}
           </button>
           <button onClick={doRestore} disabled={subscription.busy} style={{width:"100%",background:"transparent",border:"none",color:"#888",fontSize:13,cursor:"pointer",padding:"11px"}}>Restore Purchases</button>
+
+          <div style={{display:"flex",gap:8,marginTop:4}}>
+            <input value={codeInput} onChange={e=>setCodeInput(e.target.value)} placeholder="Have a code?" autoCapitalize="characters" autoCorrect="off" style={{flex:1,minWidth:0,background:"#141414",border:"1px solid #2a2a2a",color:"#f0ece4",borderRadius:10,padding:"11px 14px",fontSize:13,boxSizing:"border-box",fontFamily:"inherit"}}/>
+            <button onClick={doRedeem} disabled={redeeming} style={{background:"#1a1a1a",border:"1px solid #333",color:"#f0ece4",borderRadius:10,padding:"0 16px",fontSize:13,fontWeight:600,cursor:"pointer",opacity:redeeming?0.7:1}}>{redeeming?"…":"Redeem"}</button>
+          </div>
 
           <div style={{fontSize:10,color:"#555",textAlign:"center",lineHeight:1.6,margin:"4px 0 12px"}}>
             Payment is charged to your account at confirmation. Subscriptions auto-renew unless turned off at least 24 hours before the end of the current period; manage or cancel anytime in your account settings.

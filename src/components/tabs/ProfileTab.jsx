@@ -39,6 +39,7 @@ export default function ProfileTab() {
     isPremium,
     isPreviewMode,
     lifetimeAccess,
+    subscriptionPlan,
     kidsNames,
     loveLanguage,
     numerology,
@@ -1178,37 +1179,38 @@ export default function ProfileTab() {
             letterSpacing: "0.1em",
             marginBottom: 10
           }}>Your Account</div>
-                    <div style={{
-            display: "flex",
-            justifyContent: "space-between",
-            alignItems: "center",
-            marginBottom: 12
-          }}>
-                      <div>
-                        <div style={{
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={{
                 fontSize: 14,
                 color: "#f0ece4",
                 fontWeight: 600
               }}>{authUser.name || "Your account"}</div>
-                        <div style={{
+                      <div style={{
                 fontSize: 12,
                 color: "#666",
-                marginTop: 2
+                marginTop: 2,
+                wordBreak: "break-all"
               }}>{authUser.email}</div>
-                        <div style={{
+                      <div style={{
                 fontSize: 11,
                 marginTop: 4,
                 fontWeight: 600,
                 color: lifetimeAccess ? "#27ae60" : isPremium ? "#8e44ad" : "#27ae60"
               }}>
-                          {lifetimeAccess
+                        {lifetimeAccess
                   ? "✓ Free Forever"
-                  : isPremium
-                    ? "✓ Outstanding Partner — $21.99/month"
-                    : "Free plan"}
-                        </div>
+                  : subscriptionPlan
+                    ? `✓ Outstanding Partner — ${
+                        subscriptionPlan.priceString
+                          ? `${subscriptionPlan.priceString}${subscriptionPlan.type === "annual" ? "/year" : subscriptionPlan.type === "monthly" ? "/month" : ""}`
+                          : subscriptionPlan.type === "annual" ? "Yearly" : subscriptionPlan.type === "monthly" ? "Monthly" : "Premium"
+                      }`
+                    : isPremium
+                      ? "✓ Outstanding Partner — Premium"
+                      : "Free plan"}
                       </div>
-                      <button onClick={async () => {
+                    </div>
+                    <button onClick={async () => {
               try {
                 await rcLogOut();
               } catch (e) {}
@@ -1232,17 +1234,18 @@ export default function ProfileTab() {
               setAuthEmail("");
               setAuthPassword("");
             }} style={{
+              width: "100%",
               background: "#111",
               border: "1px solid #333",
               borderRadius: 10,
-              padding: "8px 14px",
-              fontSize: 12,
+              padding: "10px 14px",
+              fontSize: 13,
               color: "#888",
-              cursor: "pointer"
+              cursor: "pointer",
+              marginBottom: 8
             }}>
-                        Sign Out
-                      </button>
-                    </div>
+                      Sign Out
+                    </button>
                     {!isPremium && <button onClick={() => setSubscribed(false)} style={{
             width: "100%",
             background: "linear-gradient(135deg,#8e44ad,#c0392b)",

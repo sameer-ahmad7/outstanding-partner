@@ -35,6 +35,11 @@ export function isPremiumInfo(customerInfo) {
   return !!customerInfo?.entitlements?.active?.[ENTITLEMENT_ID];
 }
 
+// Product identifier backing the active premium entitlement (null if none).
+export function activeProductId(customerInfo) {
+  return customerInfo?.entitlements?.active?.[ENTITLEMENT_ID]?.productIdentifier || null;
+}
+
 export async function rcLogIn(userId) {
   if (!configured || !userId) return;
   try { const { Purchases } = await rc(); await Purchases.logIn({ appUserID: userId }); }
@@ -77,6 +82,6 @@ export async function addCustomerInfoListener(cb) {
   if (!configured) return;
   try {
     const { Purchases } = await rc();
-    await Purchases.addCustomerInfoUpdateListener((info) => cb(isPremiumInfo(info)));
+    await Purchases.addCustomerInfoUpdateListener((info) => cb(info));
   } catch (e) { /* ignore */ }
 }

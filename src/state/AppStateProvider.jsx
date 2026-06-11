@@ -1561,6 +1561,7 @@ export function AppStateProvider({ children }) {
     setAuthError,
     subscribed,
     setSubscribed,
+    subscriptionPlan: subscription.plan,
     lifetimeAccess,
     setLifetimeAccess,
     selectedPlan,

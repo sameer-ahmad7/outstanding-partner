@@ -5,13 +5,19 @@ import * as RC from '../services/revenuecat.service.js';
 // no offering) so the app can fall back to the dev bypass for local testing.
 export function useSubscription(userId) {
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [activeProductId, setActiveProductId] = useState(null);
   const [offering, setOffering] = useState(null);
   const [ready, setReady] = useState(!RC.rcAvailable()); // web is "ready" immediately
   const [busy, setBusy] = useState(false);
 
+  const applyInfo = useCallback((info) => {
+    setIsSubscribed(RC.isPremiumInfo(info));
+    setActiveProductId(RC.activeProductId(info));
+  }, []);
+
   const refresh = useCallback(async () => {
     const info = await RC.getCustomerInfo();
-    if (info) setIsSubscribed(RC.isPremiumInfo(info));
+    if (info) applyInfo(info);
     const off = await RC.getCurrentOffering();
     if (off) {
       setOffering(off);
@@ -21,7 +27,7 @@ export function useSubscription(userId) {
     } else {
       console.warn('[subscription] no current offering returned by RevenueCat');
     }
-  }, []);
+  }, [applyInfo]);
 
   // Configure once on mount (native only).
   useEffect(() => {
@@ -30,7 +36,7 @@ export function useSubscription(userId) {
     (async () => {
       const ok = await RC.configureRC();
       if (!ok) { if (mounted) setReady(true); return; }
-      await RC.addCustomerInfoListener((active) => { if (mounted) setIsSubscribed(active); });
+      await RC.addCustomerInfoListener((info) => { if (mounted) applyInfo(info); });
       if (userId) await RC.rcLogIn(userId);
       await refresh();
       if (mounted) setReady(true);
@@ -56,5 +62,27 @@ export function useSubscription(userId) {
     finally { setBusy(false); }
   }, []);
 
-  return { isSubscribed, offering, ready, busy, purchase, restore, refresh, available: RC.rcAvailable() };
+  // Derive the active plan (monthly/annual + localized price) by matching the
+  // entitlement's product id against the offering packages.
+  const plan = (() => {
+    if (!isSubscribed || !activeProductId) return null;
+    const pkgs = (offering && offering.availablePackages) || [];
+    const pkg = pkgs.find(p => p?.product?.identifier === activeProductId);
+    let type = null;
+    let priceString = null;
+    if (pkg) {
+      priceString = pkg.product?.priceString || null;
+      type = pkg.packageType === 'ANNUAL' ? 'annual'
+        : pkg.packageType === 'MONTHLY' ? 'monthly'
+        : /(annual|year)/i.test(pkg.identifier || '') ? 'annual'
+        : /month/i.test(pkg.identifier || '') ? 'monthly' : null;
+    }
+    if (!type) {
+      type = /(annual|year)/i.test(activeProductId) ? 'annual'
+        : /month/i.test(activeProductId) ? 'monthly' : null;
+    }
+    return { type, priceString, productId: activeProductId };
+  })();
+
+  return { isSubscribed, plan, offering, ready, busy, purchase, restore, refresh, available: RC.rcAvailable() };
 }

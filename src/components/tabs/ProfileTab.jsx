@@ -38,6 +38,7 @@ export default function ProfileTab() {
     husbandNotes,
     isPremium,
     isPreviewMode,
+    lifetimeAccess,
     kidsNames,
     loveLanguage,
     numerology,
@@ -1198,9 +1199,13 @@ export default function ProfileTab() {
                 fontSize: 11,
                 marginTop: 4,
                 fontWeight: 600,
-                color: isPremium ? "#8e44ad" : "#27ae60"
+                color: lifetimeAccess ? "#27ae60" : isPremium ? "#8e44ad" : "#27ae60"
               }}>
-                          '✓ Outstanding Partner — $21.99/month'
+                          {lifetimeAccess
+                  ? "✓ Free Forever"
+                  : isPremium
+                    ? "✓ Outstanding Partner — $21.99/month"
+                    : "Free plan"}
                         </div>
                       </div>
                       <button onClick={async () => {

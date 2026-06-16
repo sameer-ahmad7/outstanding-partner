@@ -1,7 +1,29 @@
+import { useState } from 'react';
 import { useAppState } from '../../state/AppStateProvider.jsx';
 
 export default function ProfileTab() {
   const scope = useAppState();
+  // Local UI state for the Change Password panel.
+  const [showChangePw, setShowChangePw] = useState(false);
+  const [cpNew, setCpNew] = useState("");
+  const [cpConfirm, setCpConfirm] = useState("");
+  const [cpMsg, setCpMsg] = useState(null); // { ok, text }
+  const [cpBusy, setCpBusy] = useState(false);
+  const submitChangePw = async () => {
+    setCpMsg(null);
+    if (cpNew.length < 8) { setCpMsg({ ok: false, text: "Password must be at least 8 characters." }); return; }
+    if (cpNew !== cpConfirm) { setCpMsg({ ok: false, text: "Passwords don't match." }); return; }
+    setCpBusy(true);
+    const res = await handleChangePassword(cpNew);
+    setCpBusy(false);
+    if (res?.ok) {
+      setCpMsg({ ok: true, text: "Password updated." });
+      setCpNew(""); setCpConfirm("");
+      setTimeout(() => { setShowChangePw(false); setCpMsg(null); }, 1200);
+    } else {
+      setCpMsg({ ok: false, text: res?.error || "Could not update password." });
+    }
+  };
   const {
     CYCLE_PHASES,
     LPP,
@@ -40,6 +62,7 @@ export default function ProfileTab() {
     isPreviewMode,
     lifetimeAccess,
     subscriptionPlan,
+    handleChangePassword,
     kidsNames,
     loveLanguage,
     numerology,
@@ -1246,6 +1269,33 @@ export default function ProfileTab() {
             }}>
                       Sign Out
                     </button>
+                    {!isPreviewMode && <button onClick={() => { setShowChangePw(v => !v); setCpMsg(null); setCpNew(""); setCpConfirm(""); }} style={{
+              width: "100%",
+              background: "#111",
+              border: "1px solid #333",
+              borderRadius: 10,
+              padding: "10px 14px",
+              fontSize: 13,
+              color: "#888",
+              cursor: "pointer",
+              marginBottom: 8
+            }}>
+                      🔑 Change Password
+                    </button>}
+                    {!isPreviewMode && showChangePw && <div style={{
+              background: "#141414",
+              border: "1px solid #2a2a2a",
+              borderRadius: 10,
+              padding: 12,
+              marginBottom: 8
+            }}>
+                      <input type="password" value={cpNew} onChange={e => setCpNew(e.target.value)} placeholder="New password (min 8 characters)" style={{ width: "100%", background: "#1a1a1a", border: "1px solid #333", color: "#f0ece4", borderRadius: 8, padding: "10px 12px", fontSize: 14, boxSizing: "border-box", fontFamily: "inherit", marginBottom: 8 }} />
+                      <input type="password" value={cpConfirm} onChange={e => setCpConfirm(e.target.value)} placeholder="Confirm new password" onKeyDown={e => e.key === "Enter" && submitChangePw()} style={{ width: "100%", background: "#1a1a1a", border: "1px solid #333", color: "#f0ece4", borderRadius: 8, padding: "10px 12px", fontSize: 14, boxSizing: "border-box", fontFamily: "inherit", marginBottom: 8 }} />
+                      {cpMsg && <div style={{ color: cpMsg.ok ? "#27ae60" : "#e74c3c", fontSize: 12, marginBottom: 8 }}>{cpMsg.text}</div>}
+                      <button disabled={cpBusy} onClick={submitChangePw} style={{ width: "100%", background: "#c0392b", color: "#fff", border: "none", borderRadius: 8, padding: "10px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", opacity: cpBusy ? 0.7 : 1 }}>
+                        {cpBusy ? "Updating…" : "Update Password"}
+                      </button>
+                    </div>}
                     {!isPremium && <button onClick={() => setSubscribed(false)} style={{
             width: "100%",
             background: "linear-gradient(135deg,#8e44ad,#c0392b)",

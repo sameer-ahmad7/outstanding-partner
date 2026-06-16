@@ -1,4 +1,7 @@
-// Login / Signup / Forgot-password screen. State + handlers are owned by App and passed in.
+import { useState } from "react";
+
+// Login / Signup / Forgot / Verify-email / Reset-password screen.
+// State + handlers are owned by App and passed in.
 export default function AuthScreen({
   authScreen, setAuthScreen,
   authEmail, setAuthEmail,
@@ -6,8 +9,16 @@ export default function AuthScreen({
   authName, setAuthName,
   authError, setAuthError, authLoading,
   handleLogin, handleSignup, handleForgot,
+  handleResendVerification, handleResetPassword,
+  pendingVerifyEmail,
   isPreviewMode, setLegalView,
 }) {
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const submitReset = () => {
+    if (newPassword !== confirmPassword) { setAuthError("Passwords don't match."); return; }
+    handleResetPassword(newPassword);
+  };
   return (
     <div style={{ position: "fixed", inset: 0, background: "#0d0d0d", zIndex: 9999, display: "flex", flexDirection: "column", justifyContent: "center", padding: "40px 28px", boxSizing: "border-box", overflowY: "auto" }}>
       {authScreen === "login" && (
@@ -96,6 +107,39 @@ export default function AuthScreen({
           </button>
           <button onClick={() => { setAuthScreen("login"); setAuthError(""); }} style={{ width: "100%", background: "transparent", border: "none", color: "#555", fontSize: 13, cursor: "pointer", padding: "8px" }}>
             ← Back to login
+          </button>
+        </div>
+      )}
+
+      {authScreen === "verify" && (
+        <div>
+          <div style={{ fontSize: 44, marginBottom: 12 }}>📧</div>
+          <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "'Playfair Display',serif", lineHeight: 1.2, marginBottom: 8 }}>Verify your email.</div>
+          <div style={{ fontSize: 14, color: "#888", lineHeight: 1.6, marginBottom: 16 }}>
+            We sent a verification link to{" "}
+            <span style={{ color: "#f0ece4", fontWeight: 600 }}>{pendingVerifyEmail || authEmail || "your email"}</span>.
+            Open it on this device and tap the button to confirm your account — the app will continue automatically.
+          </div>
+          <div style={{ fontSize: 12, color: "#555", lineHeight: 1.6, marginBottom: 20 }}>Can't find it? Check your spam folder, or resend below.</div>
+          {authError && <div style={{ color: authError.includes("sent") ? "#27ae60" : "#e74c3c", fontSize: 13, marginBottom: 12, padding: "10px 12px", background: "#111", borderRadius: 8 }}>{authError}</div>}
+          <button onClick={handleResendVerification} disabled={authLoading} style={{ width: "100%", background: "#c0392b", color: "#fff", border: "none", borderRadius: 14, padding: "16px 20px", fontSize: 15, fontWeight: 700, cursor: "pointer", marginBottom: 12, opacity: authLoading ? 0.7 : 1 }}>
+            {authLoading ? "Sending..." : "Resend Email"}
+          </button>
+          <button onClick={() => { setAuthScreen("login"); setAuthError(""); }} style={{ width: "100%", background: "transparent", border: "none", color: "#555", fontSize: 13, cursor: "pointer", padding: "8px" }}>
+            ← Back to login
+          </button>
+        </div>
+      )}
+
+      {authScreen === "reset" && (
+        <div>
+          <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "'Playfair Display',serif", lineHeight: 1.2, marginBottom: 8 }}>Set a new password.</div>
+          <div style={{ fontSize: 14, color: "#666", marginBottom: 20 }}>Choose a new password for your account.</div>
+          <input value={newPassword} onChange={e => setNewPassword(e.target.value)} placeholder="New password (min 8 characters)" type="password" style={{ width: "100%", background: "#1a1a1a", border: "1px solid #333", color: "#f0ece4", borderRadius: 12, padding: "14px 16px", fontSize: 15, boxSizing: "border-box", fontFamily: "inherit", marginBottom: 10 }} />
+          <input value={confirmPassword} onChange={e => setConfirmPassword(e.target.value)} placeholder="Confirm new password" type="password" onKeyDown={e => e.key === "Enter" && submitReset()} style={{ width: "100%", background: "#1a1a1a", border: "1px solid #333", color: "#f0ece4", borderRadius: 12, padding: "14px 16px", fontSize: 15, boxSizing: "border-box", fontFamily: "inherit", marginBottom: 16 }} />
+          {authError && <div style={{ color: "#e74c3c", fontSize: 13, marginBottom: 12, padding: "10px 12px", background: "#1a0a0a", borderRadius: 8 }}>{authError}</div>}
+          <button onClick={submitReset} disabled={authLoading} style={{ width: "100%", background: "#c0392b", color: "#fff", border: "none", borderRadius: 14, padding: "16px 20px", fontSize: 15, fontWeight: 700, cursor: "pointer", marginBottom: 12, opacity: authLoading ? 0.7 : 1 }}>
+            {authLoading ? "Updating..." : "Update Password"}
           </button>
         </div>
       )}

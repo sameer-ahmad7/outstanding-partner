@@ -20,9 +20,14 @@ export default function AppShell() {
     authUser,
     codeInput,
     dismissToast,
+    emailVerified,
     handleForgot,
     handleLogin,
     handleSignup,
+    handleResendVerification,
+    handleResetPassword,
+    pendingVerifyEmail,
+    passwordRecovery,
     isPreviewMode,
     onboardSlide,
     onboarded,
@@ -53,6 +58,14 @@ export default function AppShell() {
     wifeNickname,
   } = scope;
 
+  // Auth surface shows when there's no user, the email isn't verified yet (hard gate),
+  // or a password-recovery deep link is in progress. effectiveAuthScreen forces the
+  // verify/reset screen regardless of the last-used auth tab.
+  const showAuth = passwordRecovery || !authUser || !emailVerified;
+  const effectiveAuthScreen = passwordRecovery
+    ? "reset"
+    : (authUser && !emailVerified ? "verify" : authScreen);
+
   return (
     <div style={{minHeight:"100vh",background:"#0d0d0d",color:"#f0ece4",fontFamily:"'DM Sans','Helvetica Neue',sans-serif",maxWidth:480,margin:"0 auto",position:"relative",paddingBottom:"calc(90px + env(safe-area-inset-bottom))"}}>
       <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
@@ -60,19 +73,21 @@ export default function AppShell() {
 
       <LegalOverlay />
 
-      {!authUser&&(
+      {showAuth&&(
         <AuthScreen
-          authScreen={authScreen} setAuthScreen={setAuthScreen}
+          authScreen={effectiveAuthScreen} setAuthScreen={setAuthScreen}
           authEmail={authEmail} setAuthEmail={setAuthEmail}
           authPassword={authPassword} setAuthPassword={setAuthPassword}
           authName={authName} setAuthName={setAuthName}
           authError={authError} setAuthError={setAuthError} authLoading={authLoading}
           handleLogin={handleLogin} handleSignup={handleSignup} handleForgot={handleForgot}
+          handleResendVerification={handleResendVerification} handleResetPassword={handleResetPassword}
+          pendingVerifyEmail={pendingVerifyEmail}
           isPreviewMode={isPreviewMode} setLegalView={setLegalView}
         />
       )}
 
-      {authUser&&!subscribed&&(
+      {!showAuth&&!subscribed&&(
         <Paywall
           subscription={subscription}
           isPreviewMode={isPreviewMode}
@@ -85,7 +100,7 @@ export default function AppShell() {
         />
       )}
 
-      {authUser&&subscribed&&(!onboarded||replayGuide)&&(
+      {!showAuth&&subscribed&&(!onboarded||replayGuide)&&(
         <Onboarding
           onboardSlide={onboardSlide} setOnboardSlide={setOnboardSlide}
           onboarded={onboarded} setOnboarded={setOnboarded}

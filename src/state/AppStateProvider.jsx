@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, createContext, useContext } from "react";
 import { hasSupabase } from '../services/supabaseClient.js';
-import { signIn, signUp, signOutUser, sendPasswordReset, getSession, onAuthChange, toAuthUser } from '../services/auth.service.js';
+import { signIn, signUp, signOutUser, sendPasswordReset, getSession, onAuthChange, toAuthUser, verifyEmailOtp, updatePassword, resendVerification } from '../services/auth.service.js';
 import { useCloudSync } from '../hooks/useCloudSync.js';
 import { deleteAccount } from '../services/account.service.js';
 import { getUserSubscription } from '../services/appData.service.js';
@@ -29,10 +29,14 @@ export function AppStateProvider({ children }) {
   // fresh start
   
   // ─── Auth & Subscription State ───────────────────────────────
-  const [authScreen, setAuthScreen] = useState("login"); // login | signup | forgot
-  
-  // login | signup | forgot
+  const [authScreen, setAuthScreen] = useState("login"); // login | signup | forgot | verify | reset
+
+  // login | signup | forgot | verify | reset
   const [authUser, setAuthUser] = useState(null); // fresh start
+  // Email address awaiting verification after signup (drives the "verify" screen).
+  const [pendingVerifyEmail, setPendingVerifyEmail] = useState("");
+  // True once a password-recovery deep link has established a session — forces the "set new password" screen.
+  const [passwordRecovery, setPasswordRecovery] = useState(false);
   
   // fresh start
   const [authEmail, setAuthEmail] = useState("");
@@ -385,7 +389,11 @@ export function AppStateProvider({ children }) {
   
   // Subscription-only app: an active subscription unlocks everything (no free tier).
   const isPremium = subscribed || isPreviewMode;
-  
+
+  // Email verification hard gate: dev bypass / screenshot mode skip it; otherwise the
+  // signed-in user must have a confirmed email before reaching the paywall.
+  const emailVerified = isPreviewMode || SCREENSHOT || !!authUser?.emailConfirmed;
+
   // RevenueCat entitlement state (native). Drives the hard paywall + access.
   
   // RevenueCat entitlement state (native). Drives the hard paywall + access.
@@ -451,14 +459,50 @@ export function AppStateProvider({ children }) {
     });
     const {
       data: sub
-    } = onAuthChange(session => {
+    } = onAuthChange((session, event) => {
       if (!mounted) return;
+      if (event === 'PASSWORD_RECOVERY') setPasswordRecovery(true);
       if (session?.user) setAuthUser(toAuthUser(session.user));else setAuthUser(null);
     });
     return () => {
       mounted = false;
       sub?.subscription?.unsubscribe?.();
     };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Deep-link handler: email verification / password-reset links open the app via the
+  // `outstandingpartner://auth/...?token_hash=&type=` custom scheme. We verify the token
+  // (verifyOtp establishes a session) then route: recovery -> set-new-password screen;
+  // signup/email -> verified, proceed into the app.
+  useEffect(() => {
+    if (isPreviewMode || SCREENSHOT) return;
+    let mounted = true;
+    let handle;
+    const handleUrl = async (url) => {
+      if (!url || !url.includes('token_hash')) return;
+      let params;
+      try { params = new URL(url).searchParams; }
+      catch (e) { const q = url.split('?')[1] || ''; params = new URLSearchParams(q); }
+      const tokenHash = params.get('token_hash');
+      const type = params.get('type') || 'signup';
+      if (!tokenHash) return;
+      try {
+        const { data, error } = await verifyEmailOtp(tokenHash, type);
+        if (!mounted) return;
+        if (error) { setAuthError(error.message || 'This link is invalid or has expired. Request a new one.'); setAuthScreen('login'); return; }
+        const u = data?.user || data?.session?.user;
+        if (u) setAuthUser(toAuthUser(u));
+        if (type === 'recovery') { setPasswordRecovery(true); setAuthScreen('reset'); }
+        else { setPendingVerifyEmail(''); setAuthError(''); }
+      } catch (e) {
+        if (mounted) { setAuthError('Could not verify the link. Please try again.'); setAuthScreen('login'); }
+      }
+    };
+    import('@capacitor/app').then(({ App: CapApp }) => {
+      CapApp.getLaunchUrl().then(res => { if (res?.url) handleUrl(res.url); }).catch(() => {});
+      CapApp.addListener('appUrlOpen', (e) => handleUrl(e?.url)).then(h => { handle = h; });
+    }).catch(() => {});
+    return () => { mounted = false; if (handle) handle.remove(); };
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
   
   // Native shell: status bar + Android hardware back button.
@@ -1114,6 +1158,14 @@ export function AppStateProvider({ children }) {
         error
       } = await signIn(authEmail, authPassword);
       if (error) {
+        // Unverified account → route to the verify screen with a resend option.
+        if (error.code === 'email_not_confirmed' || /not confirmed/i.test(error.message || '')) {
+          setPendingVerifyEmail(authEmail);
+          setAuthScreen("verify");
+          setAuthError("");
+          setAuthLoading(false);
+          return;
+        }
         setAuthError(error.message || "Login failed. Check your email and password.");
         setAuthLoading(false);
         return;
@@ -1166,9 +1218,10 @@ export function AppStateProvider({ children }) {
         setAuthUser(toAuthUser(data.user));
         // Access is granted by the RevenueCat 'premium' entitlement (see useSubscription).
       } else {
-        // Email confirmation enabled → user must confirm before signing in.
-        setAuthError("Account created — check your email to confirm, then sign in.");
-        setAuthScreen("login");
+        // Email confirmation enabled → hard gate: show the "verify your email" screen.
+        setPendingVerifyEmail(authEmail);
+        setAuthScreen("verify");
+        setAuthError("");
       }
     } catch (e) {
       setAuthError("Connection error. Please try again.");
@@ -1197,7 +1250,54 @@ export function AppStateProvider({ children }) {
     }
     setAuthLoading(false);
   };
-  
+
+  // Re-send the signup verification email (from the "verify" screen).
+  const handleResendVerification = async () => {
+    const email = pendingVerifyEmail || authEmail;
+    if (isPreviewMode) { setAuthError("Verification email sent — check your inbox."); return; }
+    if (!email) { setAuthError("Enter your email address first."); return; }
+    setAuthLoading(true);
+    setAuthError("");
+    try {
+      const { error } = await resendVerification(email);
+      setAuthError(error ? (error.message || "Could not resend the email.") : "Verification email sent — check your inbox.");
+    } catch (e) {
+      setAuthError("Connection error. Please try again.");
+    }
+    setAuthLoading(false);
+  };
+
+  // Set a new password after a recovery deep link (the recovery session is already active).
+  const handleResetPassword = async (newPw) => {
+    if (!newPw || newPw.length < 8) { setAuthError("Password must be at least 8 characters."); return; }
+    setAuthLoading(true);
+    setAuthError("");
+    try {
+      const { error } = await updatePassword(newPw);
+      if (error) { setAuthError(error.message || "Could not update password."); setAuthLoading(false); return; }
+      // Session stays active → clearing recovery lets AppShell route into the app.
+      setPasswordRecovery(false);
+      setAuthScreen("login");
+      setAuthError("");
+    } catch (e) {
+      setAuthError("Connection error. Please try again.");
+    }
+    setAuthLoading(false);
+  };
+
+  // Change password for the signed-in user (Profile). Returns { ok, error } for the modal.
+  const handleChangePassword = async (newPw) => {
+    if (isPreviewMode) return { ok: true };
+    if (!newPw || newPw.length < 8) return { ok: false, error: "Password must be at least 8 characters." };
+    try {
+      const { error } = await updatePassword(newPw);
+      if (error) return { ok: false, error: error.message || "Could not update password." };
+      return { ok: true };
+    } catch (e) {
+      return { ok: false, error: "Connection error. Please try again." };
+    }
+  };
+
   const handleSubscribe = async (plan = "basic") => {
     if (isPreviewMode) {
       setSubscribed(true);
@@ -1549,6 +1649,11 @@ export function AppStateProvider({ children }) {
     setAuthScreen,
     authUser,
     setAuthUser,
+    emailVerified,
+    pendingVerifyEmail,
+    setPendingVerifyEmail,
+    passwordRecovery,
+    setPasswordRecovery,
     authEmail,
     setAuthEmail,
     authPassword,
@@ -1831,6 +1936,9 @@ export function AppStateProvider({ children }) {
     handleLogin,
     handleSignup,
     handleForgot,
+    handleResendVerification,
+    handleResetPassword,
+    handleChangePassword,
     handleSubscribe,
     pickDateIdea,
     generateAIText,

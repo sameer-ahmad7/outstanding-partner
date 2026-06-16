@@ -22,7 +22,7 @@ export function useAppState() {
 export function AppStateProvider({ children }) {
   const [tab, setTab] = useState("today");
   
-  const [onboarded, setOnboarded] = useState(false); // fresh start
+  const [onboarded, setOnboarded] = useState(() => safeGet("onboarded", "") === "1"); // hydrate so returning users skip the welcome slides
   
   // ─── Auth & Subscription State ───────────────────────────────
   

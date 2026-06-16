@@ -25,6 +25,7 @@ export default function AppShell() {
     handleLogin,
     handleSignup,
     handleResendVerification,
+    handleCheckVerification,
     handleResetPassword,
     pendingVerifyEmail,
     passwordRecovery,
@@ -83,6 +84,7 @@ export default function AppShell() {
           authError={authError} setAuthError={setAuthError} authLoading={authLoading}
           handleLogin={handleLogin} handleSignup={handleSignup} handleForgot={handleForgot}
           handleResendVerification={handleResendVerification} handleResetPassword={handleResetPassword}
+          handleCheckVerification={handleCheckVerification}
           pendingVerifyEmail={pendingVerifyEmail}
           isPreviewMode={isPreviewMode} setLegalView={setLegalView}
         />

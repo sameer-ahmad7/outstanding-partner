@@ -9,7 +9,7 @@ export default function AuthScreen({
   authName, setAuthName,
   authError, setAuthError, authLoading,
   handleLogin, handleSignup, handleForgot,
-  handleResendVerification, handleResetPassword,
+  handleResendVerification, handleResetPassword, handleCheckVerification,
   pendingVerifyEmail,
   isPreviewMode, setLegalView,
 }) {
@@ -125,8 +125,11 @@ export default function AuthScreen({
           </div>
           <div style={{ fontSize: 12, color: "#555", lineHeight: 1.6, marginBottom: 20 }}>Can't find it? Check your spam folder, or resend below.</div>
           {authError && <div style={{ color: authError.includes("sent") ? "#27ae60" : "#e74c3c", fontSize: 13, marginBottom: 12, padding: "10px 12px", background: "#111", borderRadius: 8 }}>{authError}</div>}
-          <button onClick={handleResendVerification} disabled={authLoading} style={{ width: "100%", background: "#c0392b", color: "#fff", border: "none", borderRadius: 14, padding: "16px 20px", fontSize: 15, fontWeight: 700, cursor: "pointer", marginBottom: 12, opacity: authLoading ? 0.7 : 1 }}>
-            {authLoading ? "Sending..." : "Resend Email"}
+          <button onClick={() => handleCheckVerification(false)} disabled={authLoading} style={{ width: "100%", background: "#c0392b", color: "#fff", border: "none", borderRadius: 14, padding: "16px 20px", fontSize: 15, fontWeight: 700, cursor: "pointer", marginBottom: 10, opacity: authLoading ? 0.7 : 1 }}>
+            {authLoading ? "Checking..." : "I've Verified — Continue"}
+          </button>
+          <button onClick={handleResendVerification} disabled={authLoading} style={{ width: "100%", background: "#1a1a1a", color: "#888", border: "1px solid #333", borderRadius: 14, padding: "14px 20px", fontSize: 14, fontWeight: 600, cursor: "pointer", marginBottom: 12, opacity: authLoading ? 0.7 : 1 }}>
+            Resend Email
           </button>
           <button onClick={() => { setAuthScreen("login"); setAuthError(""); }} style={{ width: "100%", background: "transparent", border: "none", color: "#555", fontSize: 13, cursor: "pointer", padding: "8px" }}>
             ← Back to login

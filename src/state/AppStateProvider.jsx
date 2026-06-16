@@ -534,12 +534,15 @@ export function AppStateProvider({ children }) {
     legalView,
     tab
   });
-  
+
   navStateRef.current = {
     legalView,
     tab
   };
-  
+
+  // Holds the latest verify-screen re-check, read by the app-resume listener (set up once).
+  const verifyCheckRef = useRef(null);
+
   useEffect(() => {
     if (!isNative()) return;
     initStatusBar();
@@ -582,6 +585,10 @@ export function AppStateProvider({ children }) {
     }) => {
       CapApp.addListener('resume', () => {
         subscription.refresh?.();
+        // If we're waiting on email verification (e.g. user just confirmed in a browser),
+        // silently re-check so returning to the app picks up the verified status.
+        const v = verifyCheckRef.current;
+        if (v && v.authScreen === 'verify' && !v.authUser) v.check(true);
       }).then(h => {
         handle = h;
       });
@@ -1297,6 +1304,39 @@ export function AppStateProvider({ children }) {
     setAuthLoading(false);
   };
 
+  // Re-check verification status (used by the "I've verified — Continue" button and on app resume).
+  // If the user confirmed in a browser, there's no session in the app yet — so we try to sign in
+  // with the credentials still in memory. `silent` suppresses messaging for the resume auto-check.
+  const handleCheckVerification = async (silent = false) => {
+    if (isPreviewMode) return;
+    if (!authEmail || !authPassword) {
+      // Credentials not in memory (e.g. app was reopened) — send them to sign in instead.
+      if (!silent) { setAuthScreen("login"); setAuthError("Your email is verified — please sign in."); }
+      return;
+    }
+    if (!silent) { setAuthLoading(true); setAuthError(""); }
+    try {
+      const { data, error } = await signIn(authEmail, authPassword);
+      if (error) {
+        if (!silent) {
+          if (error.code === 'email_not_confirmed' || /not confirmed/i.test(error.message || '')) {
+            setAuthError("Not verified yet — tap the link in your email first.");
+          } else {
+            setAuthError(error.message || "Couldn’t verify. Please sign in.");
+          }
+        }
+        if (!silent) setAuthLoading(false);
+        return;
+      }
+      setAuthUser(toAuthUser(data.user)); // verified → session established → app proceeds
+    } catch (e) {
+      if (!silent) setAuthError("Connection error. Please try again.");
+    }
+    if (!silent) setAuthLoading(false);
+  };
+  // Keep the resume listener's re-check pointed at current state.
+  verifyCheckRef.current = { authScreen, authUser, check: handleCheckVerification };
+
   // Set a new password after a recovery deep link (the recovery session is already active).
   const handleResetPassword = async (newPw) => {
     if (!newPw || newPw.length < 8) { setAuthError("Password must be at least 8 characters."); return; }
@@ -1969,6 +2009,7 @@ export function AppStateProvider({ children }) {
     handleSignup,
     handleForgot,
     handleResendVerification,
+    handleCheckVerification,
     handleResetPassword,
     handleChangePassword,
     handleSubscribe,

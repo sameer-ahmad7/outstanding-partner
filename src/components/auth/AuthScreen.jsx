@@ -113,6 +113,9 @@ export default function AuthScreen({
 
       {authScreen === "verify" && (
         <div>
+          <div style={{ display: "inline-flex", alignItems: "center", gap: 6, background: "#1a1500", border: "1px solid #f39c1240", color: "#f39c12", fontSize: 11, fontWeight: 700, letterSpacing: "0.04em", textTransform: "uppercase", padding: "5px 10px", borderRadius: 999, marginBottom: 14 }}>
+            <span style={{ width: 7, height: 7, borderRadius: "50%", background: "#f39c12", display: "inline-block" }} /> Email not verified
+          </div>
           <div style={{ fontSize: 44, marginBottom: 12 }}>📧</div>
           <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "'Playfair Display',serif", lineHeight: 1.2, marginBottom: 8 }}>Verify your email.</div>
           <div style={{ fontSize: 14, color: "#888", lineHeight: 1.6, marginBottom: 16 }}>

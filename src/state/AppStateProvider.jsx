@@ -365,7 +365,13 @@ export function AppStateProvider({ children }) {
   const [reminderCat, setReminderCat] = useState("all");
   
   const [toasts, setToasts] = useState([]);
-  
+  // Transient success/info popup helper (auto-dismisses).
+  const pushToast = (icon, title, body = "") => {
+    const id = Date.now() + Math.floor(performance.now());
+    setToasts(prev => [...prev, { id, icon, title, body }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 5000);
+  };
+
   const [notifPermission, setNotifPermission] = useState("default");
   
   const [profileSection, setProfileSection] = useState("overview");
@@ -507,7 +513,7 @@ export function AppStateProvider({ children }) {
         const u = data?.user || data?.session?.user;
         if (u) setAuthUser(toAuthUser(u));
         if (type === 'recovery') { setPasswordRecovery(true); setAuthScreen('reset'); }
-        else { setPendingVerifyEmail(''); setAuthError(''); }
+        else { setPendingVerifyEmail(''); setAuthError(''); pushToast('✅', 'Email verified', 'Your account is confirmed — welcome!'); }
       } catch (e) {
         if (mounted) { setAuthError('Could not verify the link. Please try again.'); setAuthScreen('login'); }
       }
@@ -1227,6 +1233,16 @@ export function AppStateProvider({ children }) {
         setAuthLoading(false);
         return;
       }
+      // Supabase anti-enumeration: signing up with an ALREADY-registered email returns a user
+      // with an empty identities[] and no email is sent. Detect it and tell the user to sign in
+      // instead of showing the "check your email" screen for an email that never goes out.
+      const alreadyRegistered = data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0;
+      if (alreadyRegistered) {
+        setAuthError("An account with this email already exists. Please sign in.");
+        setAuthScreen("login");
+        setAuthLoading(false);
+        return;
+      }
       if (data.session && data.user) {
         // Email confirmation disabled → session is live immediately.
         setAuthUser(toAuthUser(data.user));
@@ -1293,6 +1309,7 @@ export function AppStateProvider({ children }) {
       setPasswordRecovery(false);
       setAuthScreen("login");
       setAuthError("");
+      pushToast('✅', 'Password updated', 'You can now use your new password.');
     } catch (e) {
       setAuthError("Connection error. Please try again.");
     }

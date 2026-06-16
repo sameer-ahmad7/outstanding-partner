@@ -53,6 +53,7 @@ export default function AppShell() {
     setTab,
     subMsg,
     subscribed,
+    subscriptionReady,
     subscription,
     toasts,
     wifeNickname,
@@ -87,7 +88,14 @@ export default function AppShell() {
         />
       )}
 
-      {!showAuth&&!subscribed&&(
+      {!showAuth&&!subscriptionReady&&(
+        <div style={{position:"fixed",inset:0,background:"#0d0d0d",zIndex:9998,display:"flex",alignItems:"center",justifyContent:"center"}}>
+          <div style={{width:32,height:32,border:"3px solid #2a2a2a",borderTopColor:"#c0392b",borderRadius:"50%",animation:"opSpin 0.8s linear infinite"}}/>
+          <style>{`@keyframes opSpin{to{transform:rotate(360deg)}}`}</style>
+        </div>
+      )}
+
+      {!showAuth&&subscriptionReady&&!subscribed&&(
         <Paywall
           subscription={subscription}
           isPreviewMode={isPreviewMode}

@@ -53,7 +53,11 @@ export function AppStateProvider({ children }) {
   
   // fresh start
   const [lifetimeAccess, setLifetimeAccess] = useState(false); // granted via redeemed access code
-  
+  // The user id the lifetime flag has been fetched for. Tracked per-user (not a bare boolean)
+  // so there's no render gap when authUser changes — gates the paywall so already-subscribed
+  // users never see a flash of the plans screen before access resolves.
+  const [lifetimeCheckedFor, setLifetimeCheckedFor] = useState(null);
+
   // granted via redeemed access code
   const [selectedPlan, setSelectedPlan] = useState("annual"); // paywall: 'annual' | 'monthly'
   
@@ -406,17 +410,27 @@ export function AppStateProvider({ children }) {
     }
     setSubscribed(subscription.isSubscribed || lifetimeAccess);
   }, [subscription.isSubscribed, lifetimeAccess, isPreviewMode]);
-  
+
   // Lifetime access (redeemed code) — read the flag from the subscription mirror on login.
-  
+
   // Lifetime access (redeemed code) — read the flag from the subscription mirror on login.
   useEffect(() => {
     if (isPreviewMode || !authUser?.id) {
       setLifetimeAccess(false);
+      setLifetimeCheckedFor(authUser?.id || "none");
       return;
     }
-    getUserSubscription(authUser.id).then(sub => setLifetimeAccess(!!sub?.lifetime)).catch(() => {});
+    getUserSubscription(authUser.id)
+      .then(sub => setLifetimeAccess(!!sub?.lifetime))
+      .catch(() => {})
+      .finally(() => setLifetimeCheckedFor(authUser.id));
   }, [authUser?.id, isPreviewMode]);
+
+  // Subscription status is "resolved" only once both RevenueCat is ready AND the lifetime
+  // flag has been fetched for THIS user. Until then the paywall stays hidden (a loader shows)
+  // so a subscribed user never sees a flash of the plans screen before access loads.
+  const lifetimeChecked = !authUser?.id || lifetimeCheckedFor === authUser.id;
+  const subscriptionReady = isPreviewMode || (subscription.ready && lifetimeChecked);
   
   // Dev-only (store screenshots): VITE_SCREENSHOT=true drives a deterministic screen without login.
   //  - bypass=false -> paywall;  bypass=true -> app at VITE_SCREENSHOT_TAB. No real data access (RLS).
@@ -1666,6 +1680,7 @@ export function AppStateProvider({ children }) {
     setAuthError,
     subscribed,
     setSubscribed,
+    subscriptionReady,
     subscriptionPlan: subscription.plan,
     lifetimeAccess,
     setLifetimeAccess,

@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.outstandingpartner.app",
+      "sha256_cert_fingerprints": [
+        "95:A6:C7:1F:8F:DB:9B:BD:49:82:8E:63:C6:95:24:49:EC:04:60:B6:AD:2D:08:E5:39:58:15:6B:7C:F1:6C:A5"
+      ]
+    }
+  }
+]

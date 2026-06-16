@@ -3,10 +3,22 @@
     "public": "web-legal",
     "cleanUrls": true,
     "trailingSlash": false,
-    "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
+    "ignore": ["firebase.json", "**/node_modules/**"],
     "rewrites": [
       { "source": "/privacy", "destination": "/privacy.html" },
-      { "source": "/support", "destination": "/support.html" }
+      { "source": "/support", "destination": "/support.html" },
+      { "source": "/auth", "destination": "/auth.html" },
+      { "source": "/auth/**", "destination": "/auth.html" }
+    ],
+    "headers": [
+      {
+        "source": "/.well-known/apple-app-site-association",
+        "headers": [{ "key": "Content-Type", "value": "application/json" }]
+      },
+      {
+        "source": "/.well-known/assetlinks.json",
+        "headers": [{ "key": "Content-Type", "value": "application/json" }]
+      }
     ]
   }
 }

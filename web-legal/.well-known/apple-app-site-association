@@ -1,0 +1,11 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "MHWR5UKD73.com.outstandingpartner.app",
+        "paths": ["/auth/*"]
+      }
+    ]
+  }
+}

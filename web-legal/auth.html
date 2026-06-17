@@ -67,36 +67,55 @@
     </div>
   </div>
 
-  <script type="module">
-    import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/+esm';
+  <script>
+    // No external SDK — talk to Supabase GoTrue REST directly (robust, dependency-free).
+    var SUPABASE_URL = 'https://avnqmwuvzdkkfnovaibl.supabase.co';
+    var SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF2bnFtd3V2emRra2Zub3ZhaWJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1NDA2OTUsImV4cCI6MjA5NjExNjY5NX0.VvLNeWYXM1_GiEhzha9VAkEHxnFCuRxjIgDrN0EbmkQ';
 
-    const SUPABASE_URL = 'https://avnqmwuvzdkkfnovaibl.supabase.co';
-    const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF2bnFtd3V2emRra2Zub3ZhaWJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1NDA2OTUsImV4cCI6MjA5NjExNjY5NX0.VvLNeWYXM1_GiEhzha9VAkEHxnFCuRxjIgDrN0EbmkQ';
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON);
+    var $ = function (id) { return document.getElementById(id); };
+    function show(id) {
+      ['loading','confirmed','resetForm','resetDone','error'].forEach(function (x) { $(x).classList.add('hidden'); });
+      $(id).classList.remove('hidden');
+    }
+    function showError(msg) { if (msg) $('errText').textContent = msg; show('error'); }
 
-    const $ = (id) => document.getElementById(id);
-    const show = (id) => { ['loading','confirmed','resetForm','resetDone','error'].forEach(x => $(x).classList.add('hidden')); $(id).classList.remove('hidden'); };
+    var params = new URLSearchParams(location.search);
+    var tokenHash = params.get('token_hash');
+    var type = params.get('type') || 'signup';
+    var accessToken = null;
 
-    const params = new URLSearchParams(location.search);
-    const tokenHash = params.get('token_hash');
-    const type = params.get('type') || 'signup';
-
-    async function run() {
-      if (!tokenHash) { show('error'); return; }
-      const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type });
-      if (error) { $('errText').textContent = error.message || 'This link is invalid or has already been used.'; show('error'); return; }
-      if (type === 'recovery') { show('resetForm'); } else { show('confirmed'); }
+    function run() {
+      if (!tokenHash) { showError('This link is missing its verification token. Please request a new one from the app.'); return; }
+      fetch(SUPABASE_URL + '/auth/v1/verify', {
+        method: 'POST',
+        headers: { 'apikey': SUPABASE_ANON, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type: type, token_hash: tokenHash })
+      }).then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (data) {
+          if (!res.ok) { showError(data.msg || data.error_description || data.error || 'This link is invalid or has expired.'); return; }
+          accessToken = data.access_token || null;
+          if (type === 'recovery') { show('resetForm'); } else { show('confirmed'); }
+        });
+      }).catch(function () { showError('Could not reach the server. Please check your connection and try again.'); });
     }
 
-    $('resetBtn').addEventListener('click', async () => {
-      const pw1 = $('pw1').value, pw2 = $('pw2').value;
+    $('resetBtn').addEventListener('click', function () {
+      var pw1 = $('pw1').value, pw2 = $('pw2').value;
       $('resetMsg').textContent = '';
       if (pw1.length < 8) { $('resetMsg').textContent = 'Password must be at least 8 characters.'; return; }
       if (pw1 !== pw2) { $('resetMsg').textContent = "Passwords don't match."; return; }
+      if (!accessToken) { $('resetMsg').textContent = 'Your reset link has expired. Please request a new one.'; return; }
       $('resetBtn').disabled = true; $('resetBtn').textContent = 'Updating…';
-      const { error } = await supabase.auth.updateUser({ password: pw1 });
-      if (error) { $('resetMsg').textContent = error.message || 'Could not update password.'; $('resetBtn').disabled = false; $('resetBtn').textContent = 'Update Password'; return; }
-      show('resetDone');
+      fetch(SUPABASE_URL + '/auth/v1/user', {
+        method: 'PUT',
+        headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: pw1 })
+      }).then(function (res) {
+        return res.json().catch(function () { return {}; }).then(function (data) {
+          if (!res.ok) { $('resetMsg').textContent = data.msg || data.error_description || 'Could not update password.'; $('resetBtn').disabled = false; $('resetBtn').textContent = 'Update Password'; return; }
+          show('resetDone');
+        });
+      }).catch(function () { $('resetMsg').textContent = 'Connection error. Please try again.'; $('resetBtn').disabled = false; $('resetBtn').textContent = 'Update Password'; });
     });
 
     run();

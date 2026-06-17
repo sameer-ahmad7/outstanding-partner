@@ -84,18 +84,26 @@
     var type = params.get('type') || 'signup';
     var accessToken = null;
 
-    function run() {
-      if (!tokenHash) { showError('This link is missing its verification token. Please request a new one from the app.'); return; }
-      fetch(SUPABASE_URL + '/auth/v1/verify', {
+    function verifyToken(otpType) {
+      // Returns a promise resolving to { ok, data }.
+      return fetch(SUPABASE_URL + '/auth/v1/verify', {
         method: 'POST',
         headers: { 'apikey': SUPABASE_ANON, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ type: type, token_hash: tokenHash })
+        body: JSON.stringify({ type: otpType, token_hash: tokenHash })
       }).then(function (res) {
-        return res.json().catch(function () { return {}; }).then(function (data) {
-          if (!res.ok) { showError(data.msg || data.error_description || data.error || 'This link is invalid or has expired.'); return; }
-          accessToken = data.access_token || null;
-          if (type === 'recovery') { show('resetForm'); } else { show('confirmed'); }
-        });
+        return res.json().catch(function () { return {}; }).then(function (data) { return { ok: res.ok, data: data }; });
+      });
+    }
+
+    function run() {
+      if (!tokenHash) { showError('This link is missing its token. Please request a new one from the app.'); return; }
+      // Password recovery: do NOT verify on load. Email clients pre-scan links, which would burn
+      // the single-use token before the user submits. Show the form; verify on submit instead.
+      if (type === 'recovery') { show('resetForm'); return; }
+      // Email confirmation: verify immediately (no form to wait for).
+      verifyToken(type).then(function (r) {
+        if (!r.ok) { showError(r.data.msg || r.data.error_description || r.data.error || 'This link is invalid or has expired.'); return; }
+        show('confirmed');
       }).catch(function () { showError('Could not reach the server. Please check your connection and try again.'); });
     }
 
@@ -104,18 +112,23 @@
       $('resetMsg').textContent = '';
       if (pw1.length < 8) { $('resetMsg').textContent = 'Password must be at least 8 characters.'; return; }
       if (pw1 !== pw2) { $('resetMsg').textContent = "Passwords don't match."; return; }
-      if (!accessToken) { $('resetMsg').textContent = 'Your reset link has expired. Please request a new one.'; return; }
       $('resetBtn').disabled = true; $('resetBtn').textContent = 'Updating…';
-      fetch(SUPABASE_URL + '/auth/v1/user', {
-        method: 'PUT',
-        headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + accessToken, 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: pw1 })
-      }).then(function (res) {
-        return res.json().catch(function () { return {}; }).then(function (data) {
-          if (!res.ok) { $('resetMsg').textContent = data.msg || data.error_description || 'Could not update password.'; $('resetBtn').disabled = false; $('resetBtn').textContent = 'Update Password'; return; }
-          show('resetDone');
+      var fail = function (m) { $('resetMsg').textContent = m; $('resetBtn').disabled = false; $('resetBtn').textContent = 'Update Password'; };
+      // 1) Consume the recovery token now (on user submit) to get a session.
+      verifyToken('recovery').then(function (r) {
+        if (!r.ok || !r.data.access_token) { fail(r.data.msg || 'This reset link is invalid or has expired. Please request a new one.'); return; }
+        // 2) Update the password with that session.
+        return fetch(SUPABASE_URL + '/auth/v1/user', {
+          method: 'PUT',
+          headers: { 'apikey': SUPABASE_ANON, 'Authorization': 'Bearer ' + r.data.access_token, 'Content-Type': 'application/json' },
+          body: JSON.stringify({ password: pw1 })
+        }).then(function (res) {
+          return res.json().catch(function () { return {}; }).then(function (data) {
+            if (!res.ok) { fail(data.msg || data.error_description || 'Could not update password.'); return; }
+            show('resetDone');
+          });
         });
-      }).catch(function () { $('resetMsg').textContent = 'Connection error. Please try again.'; $('resetBtn').disabled = false; $('resetBtn').textContent = 'Update Password'; });
+      }).catch(function () { fail('Connection error. Please try again.'); });
     });
 
     run();

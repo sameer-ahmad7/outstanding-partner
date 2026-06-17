@@ -18,6 +18,10 @@
       {
         "source": "/.well-known/assetlinks.json",
         "headers": [{ "key": "Content-Type", "value": "application/json" }]
+      },
+      {
+        "source": "/auth{,/**}",
+        "headers": [{ "key": "Cache-Control", "value": "no-store, max-age=0" }]
       }
     ]
   }

@@ -504,7 +504,7 @@ export function AppStateProvider({ children }) {
       try { params = new URL(url).searchParams; }
       catch (e) { const q = url.split('?')[1] || ''; params = new URLSearchParams(q); }
       const tokenHash = params.get('token_hash');
-      const type = params.get('type') || 'signup';
+      const type = params.get('type') || (/reset|recover/i.test(url) ? 'recovery' : 'signup');
       if (!tokenHash) return;
       try {
         const { data, error } = await verifyEmailOtp(tokenHash, type);

@@ -81,7 +81,8 @@
 
     var params = new URLSearchParams(location.search);
     var tokenHash = params.get('token_hash');
-    var type = params.get('type') || 'signup';
+    // Fall back to the path if type is missing (e.g. /auth/reset -> recovery), then default to signup.
+    var type = params.get('type') || (/reset|recover/i.test(location.pathname) ? 'recovery' : 'signup');
     var accessToken = null;
 
     function verifyToken(otpType) {

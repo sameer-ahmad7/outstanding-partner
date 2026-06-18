@@ -56,6 +56,16 @@ export function getCurrentPhase(d) {
   return {key:"menstrual",...CYCLE_PHASES.menstrual};
 }
 
+// Current day (1–28) of the 28-day cycle for a given start date string ("YYYY-MM-DD"); null if no/invalid date.
+// Recompute this on every app open so the cycle auto-advances day by day.
+export function getCycleDay(cycleStartDate) {
+  if (!cycleStartDate) return null;
+  const start = new Date(cycleStartDate);
+  if (isNaN(start)) return null;
+  const diff = Math.floor((new Date() - start) / 864e5) + 1;
+  return Math.max(1, Math.min(28, ((diff - 1) % 28) + 1));
+}
+
 export function getToday() { return new Date().toISOString().split("T")[0]; }
 
 export function getDayOfYear(date) { return Math.floor((date - new Date(date.getFullYear(),0,0)) / 864e5); }

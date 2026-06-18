@@ -8,7 +8,7 @@ import { useSubscription } from '../hooks/useSubscription.js';
 import { rcLogOut } from '../services/revenuecat.service.js';
 import { initStatusBar, isNative } from '../services/platform.service.js';
 import { NEURO, SHC, LPP, TASK_LPP, ZODIAC_SIGNS, CHINESE_ZODIAC, NUMEROLOGY, REMINDER_LIBRARY, CATEGORIES, DAYS_OF_WEEK, DAY_LABELS, CYCLE_PHASES, NEEDS, NEED_COLORS, DAILY_TASKS, TEXT_SAMPLES, MONTHS, DAILY_TRUTHS, PHASE_SCRIPTS, DIAGNOSTIC_QUESTIONS, CHALLENGE_30, CHALLENGE_60, CHALLENGE_90, CHALLENGE_MONTHLY, SEASONAL_THEMES, EXTENDED_TASKS, EXTENDED_TEXTS, DATE_IDEAS, TEXT_SHC, TASK_SHC, SEASONAL_CAMPAIGNS, HOME_ACTIVITIES, HOME_ACTIVITY_TASKS, HOME_ACTIVITY_REMINDERS, ALL_REMINDERS } from '../constants/data.js';
-import { getLifePathNumber, getCurrentPhase, getToday, getDayOfYear, getDailyTextFromLibrary, getDailyActivityFromLibrary, API_URL, APP_SECRET, fetchAI, _store, safeGet, safeGetJSON, copyText, safeSet, getChineseZodiac, getZodiacFromDate, getMonthKey, getActiveCampaign, getWeekKey, getCurrentMonth, getSeasonalTheme, getVarietyTask, getVarietyTexts } from '../utils/helpers.js';
+import { getLifePathNumber, getCurrentPhase, getCycleDay, getToday, getDayOfYear, getDailyTextFromLibrary, getDailyActivityFromLibrary, API_URL, APP_SECRET, fetchAI, _store, safeGet, safeGetJSON, copyText, safeSet, getChineseZodiac, getZodiacFromDate, getMonthKey, getActiveCampaign, getWeekKey, getCurrentMonth, getSeasonalTheme, getVarietyTask, getVarietyTexts } from '../utils/helpers.js';
 import { NeedBadge, NeuroBadge, PremiumGate, SHCBadge, SHCRow, LPPBadge, NeuroPanel, PhaseCard, ReminderCard } from '../components/primitives.jsx';
 
 const AppStateContext = createContext(null);
@@ -101,11 +101,8 @@ export function AppStateProvider({ children }) {
   const handleCycleStart = val => {
     setCycleStartDate(val);
     safeSet("cycleStartDate", val);
-    if (val) {
-      const start = new Date(val);
-      const now = new Date();
-      const diff = Math.floor((now - start) / 864e5) + 1;
-      const day = Math.max(1, Math.min(28, (diff - 1) % 28 + 1));
+    const day = getCycleDay(val);
+    if (day != null) {
       setCycleDay(day);
       safeSet("cycleDay", String(day));
     }
@@ -543,6 +540,10 @@ export function AppStateProvider({ children }) {
   // Holds the latest verify-screen re-check, read by the app-resume listener (set up once).
   const verifyCheckRef = useRef(null);
 
+  // Latest cycle start date, read by the once-registered resume listener to recompute the day.
+  const cycleStartRef = useRef(cycleStartDate);
+  cycleStartRef.current = cycleStartDate;
+
   useEffect(() => {
     if (!isNative()) return;
     initStatusBar();
@@ -589,6 +590,9 @@ export function AppStateProvider({ children }) {
         // silently re-check so returning to the app picks up the verified status.
         const v = verifyCheckRef.current;
         if (v && v.authScreen === 'verify' && !v.authUser) v.check(true);
+        // Re-derive the cycle day so a backgrounded app crossing midnight stays current.
+        const d = getCycleDay(cycleStartRef.current);
+        if (d != null) setCycleDay(d);
       }).then(h => {
         handle = h;
       });
@@ -605,7 +609,14 @@ export function AppStateProvider({ children }) {
   useEffect(() => {
     safeSet("cycleStartDate", cycleStartDate);
   }, [cycleStartDate]);
-  
+
+  // Auto-advance the cycle: derive the current day from the stored start date on every app
+  // open (and whenever the start date changes), so "Day N of 28" + phase stay current.
+  useEffect(() => {
+    const d = getCycleDay(cycleStartDate);
+    if (d != null) setCycleDay(d);
+  }, [cycleStartDate]);
+
   useEffect(() => {
     safeSet("taskLog", JSON.stringify(taskLog));
   }, [taskLog]);

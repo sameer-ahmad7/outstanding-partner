@@ -19,7 +19,7 @@ export function useAppState() {
   return value;
 }
 
-export function AppStateProvider({ children }) {
+export function AppStateProvider({ children, onRehydrated }) {
   const [tab, setTab] = useState("today");
   
   const [onboarded, setOnboarded] = useState(() => safeGet("onboarded", "") === "1"); // hydrate so returning users skip the welcome slides
@@ -458,7 +458,7 @@ export function AppStateProvider({ children }) {
   // eslint-disable-line react-hooks/exhaustive-deps
   
   // Cloud sync: hydrate from / push to Supabase while authenticated (Supabase mode only).
-  useCloudSync(authUser?.id, !isPreviewMode && !!authUser);
+  useCloudSync(authUser?.id, !isPreviewMode && !!authUser, onRehydrated);
   
   // Restore Supabase session on launch + subscribe to auth changes.
   // (Subscription status comes from RevenueCat, not set here.)

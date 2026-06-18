@@ -108,7 +108,10 @@ export function AppStateProvider({ children, onRehydrated }) {
     }
   };
   
-  const [taskLog, setTaskLog] = useState(() => safeGetJSON("taskLog", []));
+  // Mission history. Capped to the most recent TASK_LOG_MAX entries (newest first) so the
+  // synced snapshot can't grow unbounded over years.
+  const TASK_LOG_MAX = 500;
+  const [taskLog, setTaskLog] = useState(() => safeGetJSON("taskLog", []).slice(0, TASK_LOG_MAX));
   
   const [wifeNeeds, setWifeNeeds] = useState(() => safeGetJSON("wifeNeeds", []));
   
@@ -983,7 +986,7 @@ export function AppStateProvider({ children, onRehydrated }) {
       worked: taskWorked,
       mood: taskMood
     };
-    setTaskLog(prev => [entry, ...prev.filter(l => l.date !== getToday())]);
+    setTaskLog(prev => [entry, ...prev.filter(l => l.date !== getToday())].slice(0, TASK_LOG_MAX));
     const monthKey = getMonthKey();
     const prev = usedTaskIds[monthKey] || [];
     if (todayTask?.id && !prev.includes(todayTask.id)) setUsedTaskIds(p => ({

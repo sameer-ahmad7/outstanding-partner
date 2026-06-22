@@ -112,7 +112,13 @@ export function AppStateProvider({ children, onRehydrated }) {
   // synced snapshot can't grow unbounded over years.
   const TASK_LOG_MAX = 500;
   const [taskLog, setTaskLog] = useState(() => safeGetJSON("taskLog", []).slice(0, TASK_LOG_MAX));
-  
+
+  // "Turn" counters that advance the Today-tab content when the user completes an action:
+  // mission Done / text Sent / activity Done each bump their counter so the next item appears.
+  const [taskTurn, setTaskTurn] = useState(() => parseInt(safeGet("taskTurn", "0")) || 0);
+  const [textTurn, setTextTurn] = useState(() => parseInt(safeGet("textTurn", "0")) || 0);
+  const [activityTurn, setActivityTurn] = useState(() => parseInt(safeGet("activityTurn", "0")) || 0);
+
   const [wifeNeeds, setWifeNeeds] = useState(() => safeGetJSON("wifeNeeds", []));
   
   const [level2Completed, setLevel2Completed] = useState(() => safeGetJSON("level2Completed", []));
@@ -623,7 +629,11 @@ export function AppStateProvider({ children, onRehydrated }) {
   useEffect(() => {
     safeSet("taskLog", JSON.stringify(taskLog));
   }, [taskLog]);
-  
+
+  useEffect(() => { safeSet("taskTurn", String(taskTurn)); }, [taskTurn]);
+  useEffect(() => { safeSet("textTurn", String(textTurn)); }, [textTurn]);
+  useEffect(() => { safeSet("activityTurn", String(activityTurn)); }, [activityTurn]);
+
   useEffect(() => {
     safeSet("currentStreak", String(currentStreak));
   }, [currentStreak]);
@@ -1784,6 +1794,12 @@ export function AppStateProvider({ children, onRehydrated }) {
     handleCycleStart,
     taskLog,
     setTaskLog,
+    taskTurn,
+    setTaskTurn,
+    textTurn,
+    setTextTurn,
+    activityTurn,
+    setActivityTurn,
     wifeNeeds,
     setWifeNeeds,
     level2Completed,

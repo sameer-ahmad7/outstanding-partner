@@ -36,6 +36,12 @@ export default function TodayTab() {
     setWeeklyScore,
     showLogForm,
     taskLog,
+    taskTurn,
+    setTaskTurn,
+    textTurn,
+    setTextTurn,
+    activityTurn,
+    setActivityTurn,
     wifeBirthDay,
     wifeBirthMonth,
   } = scope;
@@ -303,8 +309,8 @@ export default function TodayTab() {
         const wk = getWeekKey();
         const pool = EXTENDED_TASKS.filter(t => !t.phase || t.phase === phase.key);
         const seed = parseInt(todayKey.replace(/-/g, "")) % pool.length;
-        const task = pool[seed] || pool[0];
-        const done = taskLog.some(l => l.date === todayKey);
+        // Advance on completion: taskTurn bumps each time a mission is logged, so the next one shows.
+        const task = pool[(seed + taskTurn) % pool.length] || pool[0];
         if (!task) return null;
         return <div style={{
           marginBottom: 12
@@ -317,7 +323,7 @@ export default function TodayTab() {
             fontWeight: 700,
             marginBottom: 8
           }}>Today's Mission</div>
-                      {!done ? <div style={{
+                      <div style={{
             background: "#1a1a1a",
             border: `1px solid ${phase.color}40`,
             borderRadius: 14,
@@ -347,28 +353,7 @@ export default function TodayTab() {
               fontWeight: 700,
               cursor: "pointer"
             }}>✓ Mark as Done</button>
-                        </div> : <div style={{
-            background: "#0a1a0a",
-            border: "1px solid #27ae6040",
-            borderRadius: 14,
-            padding: "14px 18px",
-            textAlign: "center"
-          }}>
-                          <div style={{
-              fontSize: 24,
-              marginBottom: 6
-            }}>🎯</div>
-                          <div style={{
-              fontSize: 15,
-              fontWeight: 700,
-              color: "#27ae60"
-            }}>Mission complete.</div>
-                          <div style={{
-              fontSize: 12,
-              color: "#555",
-              marginTop: 4
-            }}>She felt that.</div>
-                        </div>}
+                        </div>
                       {showLogForm && <div style={{
             background: "#1a1a1a",
             border: "1px solid #2a2a2a",
@@ -427,6 +412,7 @@ export default function TodayTab() {
                 ...p,
                 [wk]: [...(p[wk] || []), task.id]
               }));
+              setTaskTurn(t => t + 1); // advance to the next mission
               setShowLogForm(false);
               setLogNote("");
               setLogRating(0);
@@ -459,9 +445,8 @@ export default function TodayTab() {
         const todayKey = getToday();
         const pool = EXTENDED_TEXTS.filter(t => !t.phase || t.phase === phase.key);
         const seed = parseInt(todayKey.replace(/-/g, "")) % pool.length;
-        const t = pool[seed] || pool[0];
-        const sent = lastTextDate === todayKey;
-        const days = lastTextDate ? Math.floor((new Date() - new Date(lastTextDate)) / 864e5) : 99;
+        // Advance on send: textTurn bumps when the user marks a text as sent, so the next one shows.
+        const t = pool[(seed + textTurn) % pool.length] || pool[0];
         if (!t) return null;
         return <div style={{
           marginBottom: 12
@@ -482,14 +467,14 @@ export default function TodayTab() {
                         <div style={{
               fontSize: 10,
               fontWeight: 700,
-              color: sent ? "#27ae60" : days >= 2 ? "#27ae60" : "#555"
+              color: "#27ae60"
             }}>
-                          {sent ? "✓ Sent" : days >= 2 ? "📬 Send today" : `Next in ${2 - days}d`}
+                          📬 Send it
                         </div>
                       </div>
                       <div style={{
             background: "#1a1a1a",
-            border: `1px solid ${sent ? "#27ae6030" : phase.color + "30"}`,
+            border: `1px solid ${phase.color}30`,
             borderRadius: 14,
             padding: 16
           }}>
@@ -517,6 +502,7 @@ export default function TodayTab() {
               }}>Copy</button>
                           <button onClick={() => {
                 setLastTextDate(todayKey);
+                setTextTurn(n => n + 1); // advance to the next text
                 const el = document.createElement('div');
                 el.textContent = "✓ Sent.";
                 el.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#27ae60;color:#fff;padding:10px 20px;border-radius:12px;font-size:13px;font-weight:700;z-index:9999;pointer-events:none';
@@ -528,16 +514,16 @@ export default function TodayTab() {
                 }, 2000);
               }} style={{
                 flex: 1,
-                background: sent ? "#1a2a1a" : "#27ae60",
-                color: sent ? "#27ae60" : "#fff",
-                border: `1px solid ${sent ? "#27ae6040" : "transparent"}`,
+                background: "#27ae60",
+                color: "#fff",
+                border: "1px solid transparent",
                 borderRadius: 8,
                 padding: "11px 0",
                 fontSize: 13,
                 fontWeight: 700,
                 cursor: "pointer"
               }}>
-                            {sent ? "✓ Sent" : "Mark Sent"}
+                            Mark Sent
                           </button>
                         </div>
                       </div>
@@ -547,10 +533,10 @@ export default function TodayTab() {
                 {/* ── THIS WEEK'S ACTIVITY ─────────────────────────── */}
                 {(() => {
         const wk = getWeekKey();
-        const done = lastActivityDate === wk;
         const pool = HOME_ACTIVITIES.filter(a => !a.phase || a.phase === phase.key);
         const seed = parseInt(wk.replace(/-/g, "")) % pool.length;
-        const act = pool[seed] || pool[0];
+        // Advance on completion: activityTurn bumps when the user marks the activity done.
+        const act = pool[(seed + activityTurn) % pool.length] || pool[0];
         if (!act) return null;
         return <div style={{
           marginBottom: 12
@@ -565,14 +551,14 @@ export default function TodayTab() {
           }}>This Week's Activity</div>
                       <div style={{
             background: "#1a1a1a",
-            border: `1px solid ${done ? "#27ae6030" : "#9b59b630"}`,
+            border: "1px solid #9b59b630",
             borderRadius: 14,
             padding: 16
           }}>
                         <div style={{
               display: "flex",
               gap: 10,
-              marginBottom: done ? 0 : 12
+              marginBottom: 12
             }}>
                           <span style={{
                 fontSize: 22
@@ -591,7 +577,7 @@ export default function TodayTab() {
                 }}>{act.howTo || act.description}</div>
                           </div>
                         </div>
-                        {!done ? <button onClick={() => setLastActivityDate(wk)} style={{
+                        <button onClick={() => { setLastActivityDate(wk); setActivityTurn(n => n + 1); }} style={{
               width: "100%",
               background: "#9b59b6",
               color: "#fff",
@@ -601,13 +587,7 @@ export default function TodayTab() {
               fontSize: 13,
               fontWeight: 700,
               cursor: "pointer"
-            }}>✓ Done This Week</button> : <div style={{
-              textAlign: "center",
-              fontSize: 12,
-              color: "#27ae60",
-              fontWeight: 600,
-              paddingTop: 10
-            }}>✓ Done this week</div>}
+            }}>✓ Done This Week</button>
                       </div>
                     </div>;
       })()}

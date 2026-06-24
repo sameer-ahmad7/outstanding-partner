@@ -135,7 +135,13 @@ export default function TextsTab() {
                 lineHeight: 1.5,
                 marginBottom: 8
               }}>🧠 {sc.why}</div>}
-                              <button onClick={() => copyText(sc.line, () => {})} style={{
+                              <button onClick={() => copyText(sc.line, () => {
+                const el = document.createElement('div');
+                el.textContent = "✓ Copied";
+                el.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#27ae60;color:#fff;padding:10px 20px;border-radius:12px;font-size:13px;font-weight:700;z-index:9999;pointer-events:none';
+                document.body.appendChild(el);
+                setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.5s'; setTimeout(() => el.remove(), 500); }, 1500);
+              })} style={{
                 background: "transparent",
                 border: `1px solid ${phase.color}40`,
                 borderRadius: 8,

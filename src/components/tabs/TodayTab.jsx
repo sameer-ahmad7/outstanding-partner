@@ -489,7 +489,17 @@ export default function TodayTab() {
               display: "flex",
               gap: 8
             }}>
-                          <button onClick={() => copyText(t.text, () => {})} style={{
+                          <button onClick={() => copyText(t.text, () => {
+                const el = document.createElement('div');
+                el.textContent = "✓ Copied";
+                el.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#27ae60;color:#fff;padding:10px 20px;border-radius:12px;font-size:13px;font-weight:700;z-index:9999;pointer-events:none';
+                document.body.appendChild(el);
+                setTimeout(() => {
+                  el.style.opacity = '0';
+                  el.style.transition = 'opacity 0.5s';
+                  setTimeout(() => el.remove(), 500);
+                }, 1500);
+              })} style={{
                 flex: 1,
                 background: "#111",
                 border: `1px solid ${phase.color}40`,

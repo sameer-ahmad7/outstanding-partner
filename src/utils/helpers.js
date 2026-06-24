@@ -38,6 +38,7 @@ import {
   HOME_ACTIVITY_REMINDERS,
   ALL_REMINDERS
 } from '../constants/data.js';
+import { Capacitor } from '@capacitor/core';
 
 export function getLifePathNumber(day, month, year) {
   if (!day || !month || !year) return null;
@@ -116,21 +117,34 @@ export function safeGetJSON(key, def) {
   try { return JSON.parse(localStorage.getItem(key) ?? JSON.stringify(def)); } catch(e) { return _store[key] ?? def; }
 }
 
+function legacyCopy(text, onSuccess) {
+  const el = document.createElement('textarea');
+  el.value = text; el.style.position = 'fixed'; el.style.opacity = '0';
+  document.body.appendChild(el); el.focus(); el.select();
+  let ok = false;
+  try { ok = document.execCommand('copy'); } catch (e) { ok = false; }
+  document.body.removeChild(el);
+  if (ok && typeof onSuccess === 'function') onSuccess();
+  return ok;
+}
+
 export function copyText(text, onSuccess) {
+  // Native (iOS/Android WebView): the web Clipboard API + execCommand are unreliable,
+  // so use the Capacitor Clipboard plugin when running in the native shell.
+  if (Capacitor?.isNativePlatform?.()) {
+    import('@capacitor/clipboard')
+      .then(({ Clipboard }) => Clipboard.write({ string: text }))
+      .then(() => { if (typeof onSuccess === 'function') onSuccess(); })
+      .catch(() => legacyCopy(text, onSuccess));
+    return;
+  }
+  // Web: prefer the async Clipboard API in secure contexts, fall back to execCommand.
   if (navigator.clipboard && window.isSecureContext) {
-    navigator.clipboard.writeText(text).then(onSuccess).catch(()=>{
-      const el = document.createElement('textarea');
-      el.value = text; el.style.position = 'fixed'; el.style.opacity = '0';
-      document.body.appendChild(el); el.select();
-      try { document.execCommand('copy'); onSuccess(); } catch(e) {}
-      document.body.removeChild(el);
-    });
+    navigator.clipboard.writeText(text)
+      .then(() => { if (typeof onSuccess === 'function') onSuccess(); })
+      .catch(() => legacyCopy(text, onSuccess));
   } else {
-    const el = document.createElement('textarea');
-    el.value = text; el.style.position = 'fixed'; el.style.opacity = '0';
-    document.body.appendChild(el); el.select();
-    try { document.execCommand('copy'); onSuccess(); } catch(e) {}
-    document.body.removeChild(el);
+    legacyCopy(text, onSuccess);
   }
 }
 

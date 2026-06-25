@@ -464,13 +464,6 @@ export default function TodayTab() {
               letterSpacing: "0.12em",
               fontWeight: 700
             }}>Today's Text</div>
-                        <div style={{
-              fontSize: 10,
-              fontWeight: 700,
-              color: "#27ae60"
-            }}>
-                          📬 Send it
-                        </div>
                       </div>
                       <div style={{
             background: "#1a1a1a",

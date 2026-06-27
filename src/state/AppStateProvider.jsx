@@ -64,12 +64,6 @@ export function AppStateProvider({ children, onRehydrated }) {
   // paywall: 'annual' | 'monthly'
   const [subMsg, setSubMsg] = useState(""); // paywall status/error message
   
-  // paywall status/error message
-  const [codeInput, setCodeInput] = useState(""); // redeem-code field
-  
-  // redeem-code field
-  const [redeeming, setRedeeming] = useState(false);
-  
   const [subTier, setSubTier] = useState("basic"); // fresh start // "basic" | "premium"
   
   // fresh start // "basic" | "premium"
@@ -1769,10 +1763,6 @@ export function AppStateProvider({ children, onRehydrated }) {
     setSelectedPlan,
     subMsg,
     setSubMsg,
-    codeInput,
-    setCodeInput,
-    redeeming,
-    setRedeeming,
     subTier,
     setSubTier,
     subLoading,

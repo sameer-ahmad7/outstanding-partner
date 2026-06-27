@@ -1,16 +1,14 @@
-import { redeemAccessCode } from '../../services/account.service.js';
 import { rcLogOut } from '../../services/revenuecat.service.js';
 import { signOutUser } from '../../services/auth.service.js';
+import { openExternal } from '../../utils/helpers.js';
 
 // Hard paywall (subscription-only). State is owned by App and passed in as props;
-// service calls (redeem/restore/logout) are imported directly.
+// service calls (restore/logout) are imported directly.
 export default function Paywall({
   subscription, isPreviewMode,
   selectedPlan, setSelectedPlan,
   subMsg, setSubMsg,
-  codeInput, setCodeInput,
-  redeeming, setRedeeming,
-  setSubscribed, setLifetimeAccess, setAuthUser, setLegalView,
+  setSubscribed, setAuthUser, setLegalView,
 }) {
   const off = subscription.offering;
   const pkgs = (off && off.availablePackages) || [];
@@ -49,18 +47,6 @@ export default function Paywall({
     setSubMsg('');
     try { const ok = await subscription.restore(); if (ok) { setSubscribed(true); } else { setSubMsg('No active subscription found to restore.'); } }
     catch (e) { setSubMsg('Could not restore purchases.'); }
-  };
-
-  const doRedeem = async () => {
-    setSubMsg('');
-    if (!codeInput.trim()) { setSubMsg('Enter your code.'); return; }
-    setRedeeming(true);
-    try {
-      const res = await redeemAccessCode(codeInput.trim());
-      if (res && res.ok) { setLifetimeAccess(true); setSubscribed(true); }
-      else { setSubMsg((res && res.error) || 'Invalid or already-used code.'); }
-    } catch (e) { setSubMsg('Could not redeem code.'); }
-    finally { setRedeeming(false); }
   };
 
   const planCard = (k, label, price, per, note, badge) => {
@@ -102,17 +88,12 @@ export default function Paywall({
       </button>
       <button onClick={doRestore} disabled={subscription.busy} style={{ width: "100%", background: "transparent", border: "none", color: "#888", fontSize: 13, cursor: "pointer", padding: "11px" }}>Restore Purchases</button>
 
-      <div style={{ display: "flex", gap: 8, marginTop: 4 }}>
-        <input value={codeInput} onChange={e => setCodeInput(e.target.value)} placeholder="Have a code?" autoCapitalize="characters" autoCorrect="off" style={{ flex: 1, minWidth: 0, background: "#141414", border: "1px solid #2a2a2a", color: "#f0ece4", borderRadius: 10, padding: "11px 14px", fontSize: 13, boxSizing: "border-box", fontFamily: "inherit" }} />
-        <button onClick={doRedeem} disabled={redeeming} style={{ background: "#1a1a1a", border: "1px solid #333", color: "#f0ece4", borderRadius: 10, padding: "0 16px", fontSize: 13, fontWeight: 600, cursor: "pointer", opacity: redeeming ? 0.7 : 1 }}>{redeeming ? "…" : "Redeem"}</button>
-      </div>
-
       <div style={{ fontSize: 10, color: "#555", textAlign: "center", lineHeight: 1.6, margin: "4px 0 12px" }}>
         Payment is charged to your account at confirmation. Subscriptions auto-renew unless turned off at least 24 hours before the end of the current period; manage or cancel anytime in your account settings.
       </div>
 
       <div style={{ display: "flex", justifyContent: "center", gap: 16, flexWrap: "wrap", marginBottom: 10 }}>
-        <button onClick={() => window.open('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/', '_blank')} style={{ background: "transparent", border: "none", color: "#777", fontSize: 11, cursor: "pointer", textDecoration: "underline" }}>Terms of Use</button>
+        <button onClick={() => openExternal('https://www.apple.com/legal/internet-services/itunes/dev/stdeula/')} style={{ background: "transparent", border: "none", color: "#777", fontSize: 11, cursor: "pointer", textDecoration: "underline" }}>Terms of Use</button>
         <button onClick={() => setLegalView("privacy")} style={{ background: "transparent", border: "none", color: "#777", fontSize: 11, cursor: "pointer", textDecoration: "underline" }}>Privacy Policy</button>
         <button onClick={() => setLegalView("support")} style={{ background: "transparent", border: "none", color: "#777", fontSize: 11, cursor: "pointer", textDecoration: "underline" }}>Support</button>
       </div>

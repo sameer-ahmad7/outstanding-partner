@@ -18,7 +18,6 @@ export default function AppShell() {
     authPassword,
     authScreen,
     authUser,
-    codeInput,
     dismissToast,
     emailVerified,
     handleForgot,
@@ -32,7 +31,6 @@ export default function AppShell() {
     isPreviewMode,
     onboardSlide,
     onboarded,
-    redeeming,
     replayGuide,
     selectedPlan,
     setAuthEmail,
@@ -41,12 +39,9 @@ export default function AppShell() {
     setAuthPassword,
     setAuthScreen,
     setAuthUser,
-    setCodeInput,
     setLegalView,
-    setLifetimeAccess,
     setOnboardSlide,
     setOnboarded,
-    setRedeeming,
     setReplayGuide,
     setSelectedPlan,
     setSubMsg,
@@ -103,9 +98,7 @@ export default function AppShell() {
           isPreviewMode={isPreviewMode}
           selectedPlan={selectedPlan} setSelectedPlan={setSelectedPlan}
           subMsg={subMsg} setSubMsg={setSubMsg}
-          codeInput={codeInput} setCodeInput={setCodeInput}
-          redeeming={redeeming} setRedeeming={setRedeeming}
-          setSubscribed={setSubscribed} setLifetimeAccess={setLifetimeAccess}
+          setSubscribed={setSubscribed}
           setAuthUser={setAuthUser} setLegalView={setLegalView}
         />
       )}

@@ -148,6 +148,19 @@ export function copyText(text, onSuccess) {
   }
 }
 
+// Open an external URL. In the native WebView, window.open('_blank') is unreliable,
+// so use the Capacitor Browser plugin (opens the system in-app browser/Safari sheet).
+export function openExternal(url) {
+  if (!url) return;
+  if (Capacitor?.isNativePlatform?.()) {
+    import('@capacitor/browser')
+      .then(({ Browser }) => Browser.open({ url }))
+      .catch(() => { try { window.open(url, '_blank'); } catch (e) { /* ignore */ } });
+    return;
+  }
+  try { window.open(url, '_blank'); } catch (e) { /* ignore */ }
+}
+
 // Optional change handler — set by the cloud-sync hook to schedule debounced uploads.
 let _onStorageChange = null;
 export function setStorageChangeHandler(fn) { _onStorageChange = fn; }

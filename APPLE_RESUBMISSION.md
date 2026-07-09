@@ -154,9 +154,11 @@ values (lower('person@email.com'), 'VIP')
 on conflict (email) do nothing;
 
 insert into public.user_subscriptions (user_id, lifetime, entitlement, is_active)
-select id, true, 'premium', true from auth.users where email = lower('person@email.com')
+select id, true, 'premium', true from auth.users where lower(email) = lower('person@email.com')
 on conflict (user_id) do update set lifetime = true, is_active = true, updated_at = now();
 ```
+
+*(Email matching is fully case-insensitive: `lifetime_grants.email` is auto-lowercased on write and the signup trigger compares `lower()` on both sides — migration `20260627130000_harden_lifetime_grants.sql`.)*
 
 - If they already have an account → access applies immediately.
 - If they haven't signed up yet → the grant is remembered and applies automatically the moment they register.

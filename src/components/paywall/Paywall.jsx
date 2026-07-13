@@ -68,7 +68,7 @@ export default function Paywall({
   return (
     <div style={{ position: "fixed", inset: 0, background: "#0d0d0d", zIndex: 9998, display: "flex", flexDirection: "column", justifyContent: "center", padding: "max(32px,env(safe-area-inset-top)) 24px calc(24px + env(safe-area-inset-bottom))", boxSizing: "border-box", overflowY: "auto" }}>
       <div style={{ textAlign: "center", marginBottom: 16 }}>
-        <div style={{ fontSize: 11, color: "#c0392b", textTransform: "uppercase", letterSpacing: "0.16em", fontWeight: 700, marginBottom: 8 }}>Better Husband / Boyfriend</div>
+        <div style={{ fontSize: 11, color: "#c0392b", textTransform: "uppercase", letterSpacing: "0.16em", fontWeight: 700, marginBottom: 8 }}>Outstanding Partner</div>
         <div style={{ fontSize: 24, fontWeight: 700, fontFamily: "'Playfair Display',serif", lineHeight: 1.2, marginBottom: 6 }}>Be the partner she brags about.</div>
         <div style={{ fontSize: 13, color: "#888", lineHeight: 1.6 }}>Start with a 7-day free trial. Cancel anytime.</div>
       </div>

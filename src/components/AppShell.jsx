@@ -64,9 +64,20 @@ export default function AppShell() {
     : (authUser && !emailVerified ? "verify" : authScreen);
 
   return (
-    <div style={{minHeight:"100vh",background:"#0d0d0d",color:"#f0ece4",fontFamily:"'DM Sans','Helvetica Neue',sans-serif",maxWidth:480,margin:"0 auto",position:"relative",paddingBottom:"calc(90px + env(safe-area-inset-bottom))"}}>
+    <div className="op-app-frame" style={{minHeight:"100vh",background:"#0d0d0d",color:"#f0ece4",fontFamily:"'DM Sans','Helvetica Neue',sans-serif",maxWidth:480,margin:"0 auto",position:"relative",paddingBottom:"calc(90px + env(safe-area-inset-bottom))"}}>
       <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-      <style>{`@keyframes slideDown{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}`}</style>
+      <style>{`
+        @keyframes slideDown{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}
+        /* On wider screens (desktop web, tablets) present the mobile-first app as a
+           centered phone-width column instead of stretching full width. The transform
+           also makes this element the containing block for its position:fixed children
+           (auth / paywall / onboarding / toasts / bottom nav) so those overlays frame
+           to the column too. Phones/native (<520px) are unaffected. */
+        @media (min-width:520px){
+          html,body{background:#050505;}
+          .op-app-frame{transform:translateZ(0);box-shadow:0 0 0 1px rgba(255,255,255,.06), 0 24px 80px rgba(0,0,0,.55);}
+        }
+      `}</style>
 
       <LegalOverlay />
 

@@ -23,7 +23,7 @@ export default function AuthScreen({
     <div style={{ position: "fixed", inset: 0, background: "#0d0d0d", zIndex: 9999, display: "flex", flexDirection: "column", justifyContent: "center", padding: "40px 28px", boxSizing: "border-box", overflowY: "auto" }}>
       {authScreen === "login" && (
         <div>
-          <div style={{ fontSize: 11, color: "#c0392b", textTransform: "uppercase", letterSpacing: "0.16em", fontWeight: 700, marginBottom: 8 }}>Better Husband</div>
+          <div style={{ fontSize: 11, color: "#c0392b", textTransform: "uppercase", letterSpacing: "0.16em", fontWeight: 700, marginBottom: 8 }}>Outstanding Partner</div>
           <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "'Playfair Display',serif", lineHeight: 1.2, marginBottom: 6 }}>Welcome back.</div>
           <div style={{ fontSize: 14, color: "#666", marginBottom: 16 }}>Sign in to continue your journey.</div>
 
@@ -60,7 +60,7 @@ export default function AuthScreen({
 
       {authScreen === "signup" && (
         <div>
-          <div style={{ fontSize: 11, color: "#c0392b", textTransform: "uppercase", letterSpacing: "0.16em", fontWeight: 700, marginBottom: 8 }}>Better Husband</div>
+          <div style={{ fontSize: 11, color: "#c0392b", textTransform: "uppercase", letterSpacing: "0.16em", fontWeight: 700, marginBottom: 8 }}>Outstanding Partner</div>
           <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "'Playfair Display',serif", lineHeight: 1.2, marginBottom: 6 }}>Start your 7-day free trial.</div>
           <div style={{ fontSize: 14, color: "#666", marginBottom: 12 }}>Then $21.99/month. Cancel anytime.</div>
 

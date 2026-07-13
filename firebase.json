@@ -8,7 +8,9 @@
       { "source": "/privacy", "destination": "/privacy.html" },
       { "source": "/support", "destination": "/support.html" },
       { "source": "/auth", "destination": "/auth.html" },
-      { "source": "/auth/**", "destination": "/auth.html" }
+      { "source": "/auth/**", "destination": "/auth.html" },
+      { "source": "/app", "destination": "/app/index.html" },
+      { "source": "/app/**", "destination": "/app/index.html" }
     ],
     "headers": [
       {

@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:web": "VITE_TARGET=web vite build --outDir web-legal/app --emptyOutDir",
     "lint": "eslint .",
     "preview": "vite preview"
   },

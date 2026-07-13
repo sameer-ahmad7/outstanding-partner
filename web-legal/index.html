@@ -249,18 +249,13 @@
         if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(val)) { show('Please enter a valid email address.', false); return; }
         if (hp.value) { show("You're on the list ✅", true); return; } /* honeypot: silently accept bots */
         btn.disabled = true; btn.textContent = '…';
-        fetch(SUPABASE_URL + '/rest/v1/waitlist', {
+        fetch(SUPABASE_URL + '/functions/v1/waitlist-signup', {
           method: 'POST',
-          headers: {
-            'apikey': SUPABASE_ANON,
-            'Authorization': 'Bearer ' + SUPABASE_ANON,
-            'Content-Type': 'application/json',
-            'Prefer': 'return=minimal,resolution=ignore-duplicates'
-          },
-          body: JSON.stringify({ email: val, source: 'landing' })
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email: val, hp: hp.value })
         }).then(function(res){
-          if (res.ok || res.status === 409) {
-            show("You're on the list ✅ We'll email you when Android goes live.", true);
+          if (res.ok) {
+            show("You're on the list ✅ Check your inbox — we'll email you when Android goes live.", true);
             form.reset();
           } else {
             show('Something went wrong — please try again.', false);

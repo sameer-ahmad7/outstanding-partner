@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAppState } from '../../state/AppStateProvider.jsx';
+import { openExternal } from '../../utils/helpers.js';
 
 export default function ProfileTab() {
   const scope = useAppState();
@@ -62,6 +63,7 @@ export default function ProfileTab() {
     isPreviewMode,
     lifetimeAccess,
     subscriptionPlan,
+    subscriptionManageURL,
     handleChangePassword,
     kidsNames,
     loveLanguage,
@@ -1232,6 +1234,19 @@ export default function ProfileTab() {
                       ? "✓ Outstanding Partner — Premium"
                       : "Free plan"}
                       </div>
+                      {!lifetimeAccess && subscriptionManageURL && (
+                        <button onClick={() => openExternal(subscriptionManageURL)} style={{
+                          marginTop: 8,
+                          background: "transparent",
+                          border: "none",
+                          color: "#8e44ad",
+                          fontSize: 12,
+                          fontWeight: 600,
+                          cursor: "pointer",
+                          padding: 0,
+                          textDecoration: "underline"
+                        }}>Manage subscription</button>
+                      )}
                     </div>
                     <button onClick={async () => {
               try {

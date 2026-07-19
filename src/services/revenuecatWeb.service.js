@@ -4,7 +4,26 @@ import { Capacitor } from '@capacitor/core';
 // keeps using @revenuecat/purchases-capacitor (revenuecat.service.js). The SDK is
 // dynamically imported so it never loads inside the native app.
 export const ENTITLEMENT_ID = 'premium';
-const WEB_KEY = import.meta.env.VITE_REVENUECAT_WEB_API_KEY;
+
+// Production Web Billing key by default. For QA, appending `?rcsandbox=1` to the URL
+// switches to the sandbox key (Stripe test mode → test cards, no real charge); the choice
+// is remembered in localStorage so it survives navigation. `?rcsandbox=0` clears it.
+// Normal visitors (no flag) always use the production key.
+function selectWebKey() {
+  const prod = import.meta.env.VITE_REVENUECAT_WEB_API_KEY;
+  const sandbox = import.meta.env.VITE_REVENUECAT_WEB_SANDBOX_API_KEY;
+  try {
+    const flag = new URLSearchParams(window.location.search).get('rcsandbox');
+    if (flag === '1') localStorage.setItem('rc_sandbox', '1');
+    if (flag === '0') localStorage.removeItem('rc_sandbox');
+    if (localStorage.getItem('rc_sandbox') === '1' && sandbox) {
+      console.log('[RCweb] SANDBOX mode (Stripe test) — not for real purchases');
+      return sandbox;
+    }
+  } catch (e) { /* no window/localStorage */ }
+  return prod;
+}
+const WEB_KEY = selectWebKey();
 
 let purchases = null;
 let currentUser = null;

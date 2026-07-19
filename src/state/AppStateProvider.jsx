@@ -112,6 +112,7 @@ export function AppStateProvider({ children, onRehydrated }) {
   const [taskTurn, setTaskTurn] = useState(() => parseInt(safeGet("taskTurn", "0")) || 0);
   const [textTurn, setTextTurn] = useState(() => parseInt(safeGet("textTurn", "0")) || 0);
   const [activityTurn, setActivityTurn] = useState(() => parseInt(safeGet("activityTurn", "0")) || 0);
+  const [dateTurn, setDateTurn] = useState(() => parseInt(safeGet("dateTurn", "0")) || 0);
 
   const [wifeNeeds, setWifeNeeds] = useState(() => safeGetJSON("wifeNeeds", []));
   
@@ -627,6 +628,7 @@ export function AppStateProvider({ children, onRehydrated }) {
   useEffect(() => { safeSet("taskTurn", String(taskTurn)); }, [taskTurn]);
   useEffect(() => { safeSet("textTurn", String(textTurn)); }, [textTurn]);
   useEffect(() => { safeSet("activityTurn", String(activityTurn)); }, [activityTurn]);
+  useEffect(() => { safeSet("dateTurn", String(dateTurn)); }, [dateTurn]);
 
   useEffect(() => {
     safeSet("currentStreak", String(currentStreak));
@@ -1791,6 +1793,8 @@ export function AppStateProvider({ children, onRehydrated }) {
     setTextTurn,
     activityTurn,
     setActivityTurn,
+    dateTurn,
+    setDateTurn,
     wifeNeeds,
     setWifeNeeds,
     level2Completed,

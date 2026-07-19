@@ -14,7 +14,6 @@ export default function TodayTab() {
     currentStreak,
     cycleDay,
     cycleStartDate,
-    dateDoneMonth,
     getDayOfYear,
     getToday,
     getWeekKey,
@@ -42,9 +41,32 @@ export default function TodayTab() {
     setTextTurn,
     activityTurn,
     setActivityTurn,
+    dateTurn,
+    setDateTurn,
     wifeBirthDay,
     wifeBirthMonth,
   } = scope;
+
+  // Small "Shuffle" button shown on each daily card — swaps in a different suggestion
+  // (bumps that card's turn counter) in case the current one isn't doable right now.
+  const shuffleBtn = (onClick) => (
+    <button onClick={onClick} title="Not this one? Get a different suggestion" style={{
+      background: "transparent",
+      border: "1px solid #333",
+      color: "#999",
+      borderRadius: 999,
+      padding: "4px 11px",
+      fontSize: 10,
+      fontWeight: 700,
+      letterSpacing: "0.06em",
+      textTransform: "uppercase",
+      cursor: "pointer",
+      display: "inline-flex",
+      alignItems: "center",
+      gap: 5,
+      whiteSpace: "nowrap"
+    }}>🔀 Shuffle</button>
+  );
 
   return (
     <div>
@@ -316,13 +338,20 @@ export default function TodayTab() {
           marginBottom: 12
         }}>
                       <div style={{
-            fontSize: 10,
-            color: "#888",
-            textTransform: "uppercase",
-            letterSpacing: "0.12em",
-            fontWeight: 700,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
             marginBottom: 8
-          }}>Today's Mission</div>
+          }}>
+                        <div style={{
+              fontSize: 10,
+              color: "#888",
+              textTransform: "uppercase",
+              letterSpacing: "0.12em",
+              fontWeight: 700
+            }}>Today's Mission</div>
+                        {shuffleBtn(() => { setShowLogForm(false); setTaskTurn(t => t + 1); })}
+                      </div>
                       <div style={{
             background: "#1a1a1a",
             border: `1px solid ${phase.color}40`,
@@ -464,6 +493,7 @@ export default function TodayTab() {
               letterSpacing: "0.12em",
               fontWeight: 700
             }}>Today's Text</div>
+                        {shuffleBtn(() => setTextTurn(n => n + 1))}
                       </div>
                       <div style={{
             background: "#1a1a1a",
@@ -545,13 +575,20 @@ export default function TodayTab() {
           marginBottom: 12
         }}>
                       <div style={{
-            fontSize: 10,
-            color: "#888",
-            textTransform: "uppercase",
-            letterSpacing: "0.12em",
-            fontWeight: 700,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
             marginBottom: 8
-          }}>This Week's Activity</div>
+          }}>
+                        <div style={{
+              fontSize: 10,
+              color: "#888",
+              textTransform: "uppercase",
+              letterSpacing: "0.12em",
+              fontWeight: 700
+            }}>This Week's Activity</div>
+                        {shuffleBtn(() => setActivityTurn(n => n + 1))}
+                      </div>
                       <div style={{
             background: "#1a1a1a",
             border: "1px solid #9b59b630",
@@ -600,9 +637,9 @@ export default function TodayTab() {
         const now = new Date();
         const monthKey = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
         const seed = (now.getFullYear() * 12 + now.getMonth()) % DATE_IDEAS.length;
-        const d = DATE_IDEAS[seed] || DATE_IDEAS[0];
+        // Advance on completion / shuffle: dateTurn bumps so a new date idea shows.
+        const d = DATE_IDEAS[(seed + dateTurn) % DATE_IDEAS.length] || DATE_IDEAS[0];
         const daysLeft = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate() - now.getDate();
-        const done = dateDoneMonth === monthKey;
         return <div style={{
           marginBottom: 20
         }}>
@@ -619,22 +656,25 @@ export default function TodayTab() {
               letterSpacing: "0.12em",
               fontWeight: 700
             }}>🗓️ {MONTHS[now.getMonth()]}'s Date</div>
-                        <div style={{
-              fontSize: 10,
-              fontWeight: 700,
-              color: daysLeft <= 7 ? "#e74c3c" : daysLeft <= 14 ? "#f39c12" : "#1abc9c"
-            }}>{daysLeft}d left</div>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                          {shuffleBtn(() => setDateTurn(n => n + 1))}
+                          <div style={{
+                fontSize: 10,
+                fontWeight: 700,
+                color: daysLeft <= 7 ? "#e74c3c" : daysLeft <= 14 ? "#f39c12" : "#1abc9c"
+              }}>{daysLeft}d left</div>
+                        </div>
                       </div>
                       <div style={{
             background: "#1a1a1a",
-            border: `1px solid ${done ? "#27ae6030" : "#1abc9c30"}`,
+            border: "1px solid #1abc9c30",
             borderRadius: 14,
             padding: 16
           }}>
                         <div style={{
               display: "flex",
               gap: 10,
-              marginBottom: done ? 0 : 12
+              marginBottom: 12
             }}>
                           <span style={{
                 fontSize: 22
@@ -653,15 +693,15 @@ export default function TodayTab() {
                 }}>{d.description || d.why}</div>
                           </div>
                         </div>
-                        {done ? <div style={{
-              textAlign: "center",
-              fontSize: 12,
-              color: "#1abc9c",
-              fontWeight: 600,
-              paddingTop: 10
-            }}>✓ Done this month 🎉</div> : <button onClick={() => {
+                        <button onClick={() => {
               safeSet(`dateDone-${monthKey}`, "1");
               setDateDoneMonth(monthKey);
+              setDateTurn(n => n + 1); // advance to a new date idea, like the other cards
+              const el = document.createElement('div');
+              el.textContent = "✓ Nice!";
+              el.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#1abc9c;color:#fff;padding:10px 20px;border-radius:12px;font-size:13px;font-weight:700;z-index:9999;pointer-events:none';
+              document.body.appendChild(el);
+              setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.5s'; setTimeout(() => el.remove(), 500); }, 1500);
             }} style={{
               width: "100%",
               background: "#1abc9c",
@@ -672,7 +712,7 @@ export default function TodayTab() {
               fontSize: 13,
               fontWeight: 700,
               cursor: "pointer"
-            }}>✓ We Did This</button>}
+            }}>✓ We Did This</button>
                       </div>
                     </div>;
       })()}

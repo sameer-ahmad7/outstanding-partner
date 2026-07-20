@@ -1,127 +1,149 @@
-# Meta (Pixel + Ads) & Google Analytics — Setup + Admin Access Guide
+# Tracking & Analytics — Complete Setup (Web + Native/Capacitor)
 
-For the **account owner** to (1) create the tracking assets and (2) grant the **developer**
-admin access to manage them.
+For the **account owner** to create the tracking assets, grant the **developer** admin, and
+hand over the IDs. Covers **both** surfaces of the product.
 
 > **Developer to add everywhere:** `sameer.ahmad3247@gmail.com`
-> - For **Meta** assets: this is the email on the developer's Facebook account.
-> - For **Google Analytics**: this is the developer's Google account.
->
-> **Send the developer at the end:** the **Pixel/Dataset ID**, the **GA4 Measurement ID
-> (`G-XXXXXXX`)**, and confirmation you granted admin on all three.
+> (Facebook-account email for Meta; Google account for GA4 — same address works.)
 
 ---
 
-## PART 1 — Meta Dataset (Pixel) — website tracking
+## THE BIG PICTURE — read this first
 
-The "Pixel" is now called a **Dataset** in Events Manager. Same thing.
+Outstanding Partner has **two surfaces**, and they're tracked with **different tools**:
+
+| Surface | Tool | Notes |
+|---|---|---|
+| **Website + Web app** (anything in a browser, incl. `/app`) | **Meta Pixel (Web Dataset)** + **Google Analytics 4** | Standard web tracking |
+| **Native iOS/Android apps** (the Capacitor apps installed from the App Store / Google Play) | **Meta SDK (App Events)** tied to your **Facebook App** | ⚠️ NOT the web Pixel — installed apps need the SDK for proper attribution + iOS ATT/SKAdNetwork |
+| **Ads for both** | one **Ad Account (Ads Manager)** | runs web *Sales* campaigns + app *Install* campaigns |
+
+**Why Capacitor apps don't use the web Pixel:** even though Capacitor is web-tech inside, it
+ships as a real native app. Meta attributes app installs/events only through the **App Events
+SDK** (with SKAdNetwork on iOS) — a webview Pixel can't do that. So the two tools together
+cover the whole funnel.
+
+**Send the developer at the end:** Web **Pixel/Dataset ID**, **GA4 Measurement ID (`G-XXXX`)**,
+and the **Facebook App ID + Client Token**.
+
+---
+
+## 1 — Meta Pixel / Dataset  ·  WEB (website + web app)
 
 ### 1A. Create it
-1. Go to **business.facebook.com/events_manager**
-   *(or Meta Business Suite → left menu → All tools → Events Manager).*
-2. **Top-left: select the correct business portfolio** — your **Outstanding Partner** one
-   (NOT 3 Oak Cbd / Dream Puffs).
-3. Click the green **＋ Connect data sources** (left side).
-4. Select **Web** → **Connect** (or **Next**).
-5. If asked how to connect ("Meta Pixel" vs "Conversions API and Meta Pixel") → either is fine;
-   pick **Meta Pixel** for now (server-side Conversions API is added later).
-6. **Name the dataset:** `Outstanding Partner Web` → **Create**.
-7. If it asks for your website to check activity → enter `https://outstandingpartner.app` →
-   **Check** (optional — you can **Skip**).
-8. On the install-options screen ("Install code manually" / "Use a partner" / "Email
-   instructions") → choose **Install code manually**, then **close/skip** the code page.
-   *(The developer installs the actual code — you only need the dataset created.)*
+1. **business.facebook.com/events_manager** → top-right: select the **Outstanding Partner** portfolio.
+2. Green **＋ Connect data sources** → **Web** → **Connect / Next**.
+3. On **"Create a new dataset"**:
+   - **Name:** `Outstanding Partner Web`
+   - **Conversions API checkbox:** leave it **checked** (server-side tracking = more accurate).
+   - **Categories:** leave blank (optional; only restricts sensitive-data sharing).
+   - **Create.**
+4. If it offers install options → choose **Install code manually** → **skip/close** (the developer installs the code).
 
-### 1B. Get the ID (send this to the developer)
-1. In **Events Manager**, click your **"Outstanding Partner Web"** dataset in the left list.
-2. The **Dataset ID** (a ~15–16-digit number) appears **under the dataset name**, or in
-   **Settings** (gear icon) → *Dataset ID*.
-3. **Copy it → send to the developer.**
+### 1B. Get the ID → send to developer
+- Open the **Outstanding Partner Web** dataset → the **Dataset ID** (~15–16 digits) is under the
+  name, or **Settings (gear) → Dataset ID**. **Copy → send to developer.**
 
-### 1C. Grant the developer admin on the Dataset
-> If the developer is already a **full Admin of the Business portfolio**, they can see this
-> dataset automatically. Assigning it explicitly is a safe belt-and-suspenders.
-1. **business.facebook.com/settings** → left menu **Data sources → Datasets**.
-2. Click **Outstanding Partner Web**.
-3. Open the **Assign people / Add people** tab (or "People with access").
-4. Click **Add people** → select **`sameer.ahmad3247@gmail.com`**.
-5. Turn on **Full control / Manage dataset** → **Assign**.
+### 1C. Grant developer admin
+- Business Settings → **Data sources → Datasets** → select it → **Assign people** →
+  add `sameer.ahmad3247@gmail.com` → **Full control** → Assign.
+  *(If the developer is a full **portfolio Admin**, they already have it.)*
 
 ---
 
-## PART 2 — Ad Account (this powers Ads Manager)
+## 2 — Meta App Events  ·  NATIVE (Capacitor iOS + Android)
 
-### 2A. Create it
-1. **business.facebook.com/settings** → left menu **Accounts → Ad accounts**.
-2. **Add** (dropdown) → **Create a new ad account**.
-3. Fill in:
-   - **Ad account name:** `Outstanding Partner`
-   - **Time zone:** your reporting zone — ⚠️ **permanent, can't change later**
-   - **Currency:** **USD** — ⚠️ **permanent**
-4. "This ad account is used for" → **My business** → select the **Outstanding Partner**
-   portfolio → **Create**.
-5. On the assign-access step, add **yourself** with **Manage ad account** (Admin).
-6. **Add a payment method:** Business Settings → **Payment methods** (or Billing) → **Add** →
-   your card. *(It usually prompts right after creation.)*
+This is what tracks the **installed apps** — it runs through your **Facebook App**, not the web Pixel.
 
-### 2B. Grant the developer admin on the Ad account
-1. **business.facebook.com/settings** → **Accounts → Ad accounts** → click the
-   **Outstanding Partner** ad account.
-2. Open **Assign people / Add people**.
-3. **Add people** → select **`sameer.ahmad3247@gmail.com`**.
-4. Turn on **Manage ad account** (this is full/admin access to the ad account) → **Assign**.
+### 2A. Create the Facebook App (the app's identity) — client
+1. **developers.facebook.com** → **My Apps → Create App** (register as a developer if prompted).
+2. Use case **Other** → type **Business** → **Next**.
+3. **App name:** `Outstanding Partner`; contact email; link the **Outstanding Partner portfolio** → **Create**.
+4. On the **App Dashboard**, copy the **App ID** (~15–16 digits).
+5. **App settings → Advanced → Security → Client token** → copy it.
+6. **← Send the developer the App ID + Client Token.**
 
-*(Ads Manager itself — adsmanager.facebook.com — runs on this ad account. Nothing extra to
-send the developer; access to the ad account = access to Ads Manager for it.)*
+### 2B. Add the platforms (client, quick) — so events attribute
+- App **Settings → Basic → Add Platform**:
+  - **iOS** → Bundle ID: `com.outstandingpartner.app`
+  - **Android** → Package name: `com.outstandingpartner.app`
+    *(Android also needs a "key hash" — leave that to the developer; it comes from the signing key.)*
 
----
+### 2C. What the DEVELOPER does (no action from you) — the SDK side
+- Integrate the **Meta SDK** into the iOS/Android (Capacitor) builds and log standard app events:
+  **app install/activate → StartTrial → Subscribe → Purchase**.
+- **iOS:** add the **App Tracking Transparency (ATT)** prompt, configure **SKAdNetwork**, and set
+  advertiser-tracking based on the user's ATT choice. Update the App Store **privacy nutrition labels**.
+- **Android:** update the Play **Data Safety** form.
+- These ship in the next **mobile store build** (the Meta / Phase-5 step).
 
-## PART 3 — Google Analytics 4 (GA4)
+### 2D. In Events Manager + Ads
+- Once the SDK is live, the app shows up as a separate **"App"** data source in Events Manager.
+- For iOS, set up **Aggregated Event Measurement (AEM)** (prioritize Purchase > StartTrial > …).
+- **Connect the Facebook App to the Ad account** so you can run **App Install** campaigns.
 
-### 3A. Create the property + web stream
-1. Go to **analytics.google.com** → sign in with the account that should **own** analytics.
-2. **Admin** (gear icon, bottom-left).
-3. If you have no account yet: **Create → Account** → name `Outstanding Partner` → Next.
-4. **Create → Property** (or the Property step of account creation):
-   - **Property name:** `Outstanding Partner`
-   - **Reporting time zone** + **Currency: USD** → Next → fill business details → Create.
-5. In the property → **Data streams → Add stream → Web**:
-   - **Website URL:** `https://outstandingpartner.app`
-   - **Stream name:** `Website` → **Create stream**.
-6. On the stream details, copy the **Measurement ID** — it starts with **`G-XXXXXXX`**.
-   **Send it to the developer.**
+### 2E. Grant developer admin on the App
+- **developers.facebook.com → your app → App Roles → Roles → Add People** →
+  add `sameer.ahmad3247@gmail.com` as **Administrator**.
+  *(App roles are a separate list from Business Settings — do this too.)*
 
-### 3B. Grant the developer admin on GA4
-1. In **Analytics → Admin**.
-2. Choose the scope:
-   - **Account access management** (grants admin across everything in the account), **or**
-   - **Property access management** (just the Outstanding Partner property — narrower, also fine).
-3. Click the blue **＋** (top-right) → **Add users**.
-4. Enter **`sameer.ahmad3247@gmail.com`**.
-5. (Optional) tick **Notify new users by email**.
-6. Under **Direct roles and data restrictions**, select **Administrator**.
-7. Click **Add**.
+### 2F. Business Verification (client) — start early
+- Business Settings → **Security Center** → complete **business verification**.
+  Required for **app-install ads** + full Conversions API; can take a few days.
 
 ---
 
-## PART 4 — What to send the developer once done
-- [ ] **Meta Pixel / Dataset ID** (Part 1B)
-- [ ] **GA4 Measurement ID** — `G-XXXXXXX` (Part 3A)
-- [ ] Confirmation you added **`sameer.ahmad3247@gmail.com`** as **admin** to: the **Dataset**,
-      the **Ad account**, and **GA4**.
-- [ ] *(Later, for mobile tracking)* the **Facebook App ID** + **Client Token** from
-      developers.facebook.com.
+## 3 — Ad Account (Ads Manager)  ·  both web + app campaigns
 
-Once the developer has the Pixel ID + GA4 ID, they install both on the website (landing + app)
-and set up the "Download clicked" conversion event — no further action needed from you.
+### 3A. Create it — client
+1. **business.facebook.com/settings** → **Accounts → Ad accounts → Add → Create a new ad account**.
+2. **Name:** `Outstanding Partner`; **Time zone** + **Currency: USD** — ⚠️ **permanent**.
+3. "Used for" → **My business** → the Outstanding Partner portfolio → **Create**.
+4. **Add a payment method** (Business Settings → Payment methods → card).
+
+### 3B. Grant developer admin
+- Business Settings → **Ad accounts** → select it → **Assign people** →
+  add `sameer.ahmad3247@gmail.com` → **Manage ad account** (full/admin) → Assign.
+
+*(Ads Manager — adsmanager.facebook.com — runs on this account; nothing to send the developer.)*
 
 ---
 
-### Notes
-- If you can't add the developer to a Meta asset, it's usually because they're only a
-  **"partial access"** user on the Business portfolio — set them to **Admin / Full control**
-  at the **portfolio** level (Business Settings → Users → People → their profile → Admin access),
-  and they'll then have access to all assets.
-- Meta asset access uses the developer's **Facebook-account email**; GA4 uses their **Google
-  account** — same address (`sameer.ahmad3247@gmail.com`) works for both here.
-- The developer must **accept** any pending invite (email / notification) before access is live.
+## 4 — Google Analytics 4 (GA4)  ·  WEB analytics
+
+### 4A. Create the property + web stream — client
+1. **analytics.google.com** → **Admin** (gear, bottom-left).
+2. **Create → Account** (`Outstanding Partner`) → then **Create → Property** (`Outstanding Partner`,
+   timezone + **USD**) → fill business details → Create.
+3. Property → **Data streams → Add stream → Web**:
+   - URL: `https://outstandingpartner.app`, name `Website` → **Create stream**.
+4. Copy the **Measurement ID** — starts with **`G-XXXXXXX`**. **← Send to developer.**
+
+### 4B. Grant developer admin
+- Analytics → **Admin → Account access management** (or Property access management) →
+  blue **＋ → Add users** → `sameer.ahmad3247@gmail.com` → role **Administrator** → **Add**.
+
+### 4C. (Optional) Native app analytics
+- GA4 for **apps** is done via **Firebase Analytics** (a separate SDK), and is **optional** — the
+  plan uses the **Meta SDK** for app ad tracking and **GA4** for the website/web app. If you later
+  want in-app analytics in GA4, that's a Firebase add-on we can do down the line. **Not needed now.**
+
+---
+
+## 5 — What to send the developer (checklist)
+- [ ] **Web Pixel / Dataset ID** (Part 1B) — installed on the site now
+- [ ] **GA4 Measurement ID** `G-XXXXXXX` (Part 4A) — installed on the site now
+- [ ] **Facebook App ID + Client Token** (Part 2A) — used for the native app SDK (mobile phase)
+- [ ] Confirm `sameer.ahmad3247@gmail.com` is **admin** on: Dataset, Ad account, Facebook App, GA4
+
+### Priority
+1 + 4 (**Pixel ID + GA4 ID**) unblock **website tracking** right away → send those first.
+2 (**App ID + Client Token**) is for the **native SDK**, wired in during the mobile/Meta phase.
+
+---
+
+### Access troubleshooting
+- Meta "you don't have access to take this action" → the developer is only a **partial-access**
+  user; set them to **Admin / Full control** at the **portfolio** level (Business Settings → Users →
+  People → their profile → Admin access), then they can manage all assets.
+- The developer must **accept** any pending invite (email / notification) before access goes live.

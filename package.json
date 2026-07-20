@@ -11,6 +11,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@capacitor-firebase/analytics": "^8.3.0",
+    "@capacitor-firebase/crashlytics": "^8.3.0",
     "@capacitor/android": "^8.4.0",
     "@capacitor/app": "^8.1.0",
     "@capacitor/browser": "^8.0.3",
@@ -25,6 +27,7 @@
     "@revenuecat/purchases-capacitor": "^13.1.5",
     "@revenuecat/purchases-js": "^1.47.3",
     "@supabase/supabase-js": "^2.107.0",
+    "capacitor-plugin-app-tracking-transparency": "^3.0.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"
   },

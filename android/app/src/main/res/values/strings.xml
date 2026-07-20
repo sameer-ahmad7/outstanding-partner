@@ -4,4 +4,7 @@
     <string name="title_activity_main">Outstanding Partner</string>
     <string name="package_name">com.outstandingpartner.app</string>
     <string name="custom_url_scheme">com.outstandingpartner.app</string>
+    <string name="facebook_app_id">1619043059848775</string>
+    <string name="fb_login_protocol_scheme">fb1619043059848775</string>
+    <string name="facebook_client_token">e7e9b72fe8a04e531629250e7712dd0b</string>
 </resources>

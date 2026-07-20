@@ -28,7 +28,6 @@ export function initWebAnalytics() {
   gtag('config', GA4_ID);
 
   // Meta Pixel
-  /* eslint-disable */
   !function (f, b, e, v, n, t, s) {
     if (f.fbq) return; n = f.fbq = function () { n.callMethod ?
       n.callMethod.apply(n, arguments) : n.queue.push(arguments); };
@@ -36,17 +35,16 @@ export function initWebAnalytics() {
     n.queue = []; t = b.createElement(e); t.async = !0; t.src = v;
     s = b.getElementsByTagName(e)[0]; s.parentNode.insertBefore(t, s);
   }(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
-  /* eslint-enable */
   window.fbq('init', PIXEL_ID);
   window.fbq('track', 'PageView');
 }
 
 // Fire a GA4 event (safe no-op if analytics didn't init, e.g. native/dev).
 export function trackWeb(event, params) {
-  try { if (window.gtag) window.gtag('event', event, params || {}); } catch (e) {}
+  try { if (window.gtag) window.gtag('event', event, params || {}); } catch { /* ignore */ }
 }
 
 // Fire a Meta Pixel event. standard=true → track (standard event); false → trackCustom.
 export function trackWebPixel(event, params, standard = true) {
-  try { if (window.fbq) window.fbq(standard ? 'track' : 'trackCustom', event, params || {}); } catch (e) {}
+  try { if (window.fbq) window.fbq(standard ? 'track' : 'trackCustom', event, params || {}); } catch { /* ignore */ }
 }

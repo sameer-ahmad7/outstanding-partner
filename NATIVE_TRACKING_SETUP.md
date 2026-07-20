@@ -1,0 +1,116 @@
+# Native Tracking Setup (iOS + Android)
+
+Firebase Analytics + Crashlytics, Meta (Facebook) App Events, and iOS App Tracking
+Transparency for the native apps. Companion to `META_AND_ANALYTICS_SETUP.md` (the
+account/console side) — this covers what's in the **codebase** and the few steps that
+still need **Xcode / the store consoles** before shipping.
+
+> **IDs used:** Meta App ID `1619043059848775`, Client Token in `.env`
+> (`VITE_FACEBOOK_*`). Firebase project `outstanding-partner-app`.
+> GA4 property `outstanding-partner` (`G-9T0SC0L8C1`) — app + web data land together.
+
+---
+
+## What's already wired in the repo ✅
+
+**Cross-platform (via Capacitor plugins — `cap sync` installs them on both):**
+- `@capacitor-firebase/analytics` + `@capacitor-firebase/crashlytics` (v8.3.0).
+- `capacitor-plugin-app-tracking-transparency` (iOS ATT).
+- `src/services/analytics.native.js` — `initNativeTracking()` (ATT prompt on iOS →
+  enable Analytics + Crashlytics), `setNativeAnalyticsUser()`, `logNativeEvent()`,
+  `logNativePurchase()`. All **no-op on web** (web uses `analytics.web.js` = GA4 + Pixel).
+- Wired into `src/main.jsx` (init) and `src/hooks/useSubscription.js` (sets the analytics
+  user on login; logs a `purchase`/`start_trial` event on a successful purchase).
+- `vite.config.js` externalizes `firebase/*` (we never use the plugins' web path; native
+  uses the native bridge) so the bundle builds without the `firebase` JS SDK.
+
+**Android (config in repo):**
+- `android/app/google-services.json` (Firebase) + google-services plugin already applied.
+- Facebook SDK dependency `com.facebook.android:facebook-android-sdk:17.0.2`.
+- Manifest: Meta meta-data (ApplicationId / ClientToken / AutoLogAppEventsEnabled /
+  AdvertiserIDCollectionEnabled) + `AD_ID` permission. Strings: `facebook_app_id` etc.
+- **Android is complete** — auto-logs installs/sessions once built; no manual step.
+
+**iOS (config in repo):**
+- `ios/App/App/GoogleService-Info.plist` (Firebase).
+- `Info.plist`: Facebook keys, `NSUserTrackingUsageDescription` (ATT copy), `fb…` URL
+  scheme, `LSApplicationQueriesSchemes`, Meta `SKAdNetworkItems`.
+- `AppDelegate.swift`: Facebook init + `activateApp`, guarded by
+  `#if canImport(FBSDKCoreKit)` — **compiles fine even before the SDK is added**; the Meta
+  code activates automatically once the package is present (next step).
+
+---
+
+## iOS — two manual Xcode steps before building ⚠️
+
+The iOS project uses **Swift Package Manager**. The Firebase plugins are added automatically
+by `cap sync`, but two things need Xcode once:
+
+### 1. Add the Facebook SDK (FBSDKCoreKit)
+Open `ios/App/App.xcworkspace` (or `.xcodeproj`) → **File → Add Package Dependencies…** →
+paste `https://github.com/facebook/facebook-ios-sdk` → **Add Package** → check **FBSDKCoreKit**
+→ add it to the **App** target. (Until this is added, Meta App Events stay inactive on iOS;
+everything else still builds and runs.)
+
+### 2. Confirm GoogleService-Info.plist is in the app target
+In Xcode, select `GoogleService-Info.plist` (already in `ios/App/App/`) → File Inspector →
+**Target Membership → check "App"**. (Also confirm it appears under **Build Phases → Copy
+Bundle Resources**.) Firebase can't initialize on iOS without it bundled.
+
+Then: `npx cap sync ios` → build/run.
+
+---
+
+## RevenueCat → Meta integration (purchase/trial/subscribe events)
+
+App-install + session events flow from the **Meta SDK**. Subscription events
+(**trial start / subscribe / renewal**) are best sent to Meta **server-side via RevenueCat**,
+so they're accurate and deduped — no fragile in-app purchase bridge.
+
+In the **RevenueCat dashboard** → your project → **Integrations → Facebook** (Meta):
+1. Enter the **Meta App ID** `1619043059848775` (and, if requested, the app's system-user /
+   Conversions API token from Meta).
+2. Map RC events → Meta events (e.g. `INITIAL_PURCHASE`/`TRIAL_START` → `StartTrial`,
+   `RENEWAL` → `Subscribe`, `NON_RENEWING_PURCHASE` → `Purchase`).
+3. RC needs the device's Facebook anonymous ID to match — the Meta SDK in the app collects
+   it; RC's SDK forwards it automatically once both are configured.
+
+*(Firebase Analytics `purchase`/`start_trial` events are also logged in-app for GA4 — that's
+independent of the Meta path.)*
+
+---
+
+## Store metadata (do at submission)
+
+**iOS — App Store Connect → App Privacy:** declare tracking + the data types Meta/Firebase
+collect: **Identifiers** (Device ID), **Usage Data**, **Purchases**, **Diagnostics** (crash).
+Mark identifiers/usage as **"Used to Track You"** (ATT is implemented). The ATT prompt copy
+is the `NSUserTrackingUsageDescription` string in `Info.plist`.
+
+**Android — Play Console → Data safety:** declare the same (Device/advertising ID, app
+activity, crash logs), collected + shared for analytics/advertising.
+
+---
+
+## Verify on a real device (after the rebuild)
+
+1. **Build & run** on a device (Analytics/ATT don't fully work on simulators).
+2. **iOS:** confirm the **ATT prompt** appears on first launch; the tracking usage string reads correctly.
+3. **Meta App Events:** **Events Manager → your App data source → Test Events** (or the
+   Facebook **Events Manager** app-events tester) → launch the app → see `fb_mobile_activate_app`.
+4. **Firebase Analytics:** enable DebugView (`adb shell setprop debug.firebase.analytics.app com.outstandingpartner.app`
+   on Android, or `-FIRDebugEnabled` launch arg on iOS) → **Firebase Console → Analytics →
+   DebugView** → see events (`purchase`/`start_trial` after a sandbox purchase).
+5. **GA4:** Realtime → app stream shows the session.
+6. **Crashlytics:** force a test crash (or `FirebaseCrashlytics.crash()`), relaunch → the crash
+   appears in **Firebase Console → Crashlytics** within minutes.
+
+---
+
+## Notes
+- **Meta purchase events for ads** = RevenueCat integration above (not the in-app Firebase
+  event). The in-app Meta SDK is for **install/session attribution + advertiser ID matching**.
+- The Android **debug** key hash is registered in the Facebook App; add the **release** key
+  hash (from Play Console → App integrity → App signing key SHA-1 → base64) before the Play launch.
+- `SKAdNetworkItems` in `Info.plist` currently lists Meta's core IDs — Meta occasionally adds
+  more; refresh from Meta's docs at ad-campaign time if needed.

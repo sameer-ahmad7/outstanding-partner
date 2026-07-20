@@ -1,6 +1,15 @@
 import { useState, useEffect, useCallback } from 'react';
 import * as RC from '../services/revenuecat.service.js';
 import * as RCWeb from '../services/revenuecatWeb.service.js';
+import { setNativeAnalyticsUser, logNativePurchase } from '../services/analytics.native.js';
+import { trackWeb, trackWebPixel } from '../services/analytics.web.js';
+
+// Pull a numeric amount out of a localized price string ("$224.99" → 224.99).
+function priceToNumber(s) {
+  if (typeof s !== 'string') return undefined;
+  const m = s.replace(/,/g, '').match(/(\d+(?:\.\d+)?)/);
+  return m ? Number(m[1]) : undefined;
+}
 
 // Owns subscription state. Native (iOS/Android) uses RevenueCat's Capacitor SDK;
 // web uses RevenueCat Web Billing (Stripe) via purchases-js. When neither is
@@ -78,7 +87,7 @@ export function useSubscription(userId) {
         const ok = await RC.configureRC();
         if (!ok) { if (mounted) setReady(true); return; }
         await RC.addCustomerInfoListener((info) => { if (mounted) applyInfo(info); });
-        if (userId) await RC.rcLogIn(userId);
+        if (userId) { await RC.rcLogIn(userId); setNativeAnalyticsUser(userId); }
         await refreshNative();
         if (mounted) setReady(true);
       })();
@@ -99,11 +108,24 @@ export function useSubscription(userId) {
       if (web) {
         const info = await RCWeb.purchaseWebPackage(pkg?._web || pkg, customerEmail);
         const ok = RCWeb.isPremiumWeb(info);
-        if (ok) { setIsSubscribed(true); setManagementURL(RCWeb.webManagementURL(info)); setActiveProductId(RCWeb.webActiveProductId(info)); }
+        if (ok) {
+          setIsSubscribed(true); setManagementURL(RCWeb.webManagementURL(info)); setActiveProductId(RCWeb.webActiveProductId(info));
+          const value = priceToNumber(pkg?.product?.priceString);
+          trackWeb('purchase', { value, currency: 'USD', product_id: pkg?.product?.identifier || null });
+          trackWebPixel('Purchase', { value, currency: 'USD' });
+        }
         return ok;
       }
       const ok = await RC.purchasePackage(pkg);
       setIsSubscribed(ok);
+      if (ok) {
+        logNativePurchase({
+          value: pkg?.product?.price,
+          currency: pkg?.product?.currencyCode || 'USD',
+          productId: pkg?.product?.identifier,
+          isTrial: !!pkg?.product?.introPrice,
+        });
+      }
       return ok;
     } finally { setBusy(false); }
   }, [web]);

@@ -80,15 +80,55 @@ independent of the Meta path.)*
 
 ---
 
-## Store metadata (do at submission)
+## Store privacy declarations (do at submission)
 
-**iOS — App Store Connect → App Privacy:** declare tracking + the data types Meta/Firebase
-collect: **Identifiers** (Device ID), **Usage Data**, **Purchases**, **Diagnostics** (crash).
-Mark identifiers/usage as **"Used to Track You"** (ATT is implemented). The ATT prompt copy
-is the `NSUserTrackingUsageDescription` string in `Info.plist`.
+> Based on the SDKs/services in the app: **Supabase** (account + app data), **RevenueCat**
+> (subscriptions), **Firebase Analytics + Crashlytics**, **Meta App Events** (advertising ID +
+> events). Confirm against your actual data practices — this is a starting point, not legal advice.
 
-**Android — Play Console → Data safety:** declare the same (Device/advertising ID, app
-activity, crash logs), collected + shared for analytics/advertising.
+### iOS — App Store Connect → your app → **App Privacy → Edit**
+Answer "Yes, we collect data," then for each type set **purposes**, **linked to the user's
+identity? (yes)**, and **used for tracking? (yes/no)**. "Tracking" = anything shared with Meta
+for advertising or that uses the advertising identifier.
+
+| Data type | Collected via | Purpose | Linked | **Used to Track You** |
+|---|---|---|---|---|
+| **Contact Info → Email Address** | Supabase account | App Functionality | Yes | No |
+| **Identifiers → User ID** | Supabase / RevenueCat | App Functionality, Analytics | Yes | No |
+| **Identifiers → Device ID** (advertising ID) | Meta SDK | Third-Party Advertising, Analytics | Yes | **YES** |
+| **Purchases → Purchase History** | RevenueCat, Meta, Firebase | App Functionality, Analytics, Advertising | Yes | **YES** |
+| **Usage Data → Product Interaction** | Firebase, Meta | Analytics, Advertising | Yes | **YES** |
+| **User Content** (relationship notes, etc.) | Supabase | App Functionality | Yes | No |
+| **Diagnostics → Crash Data** | Crashlytics | App Functionality, Analytics | No | No |
+| **Diagnostics → Performance Data** | Firebase/Crashlytics | Analytics | No | No |
+
+Because some types are **"Used to Track You,"** the **ATT prompt is required** — it's implemented
+(`NSUserTrackingUsageDescription` in `Info.plist`). Advertising-ID/tracking data is only used
+when the user **allows** tracking in that prompt.
+
+### Android — Play Console → **App content → Data safety**
+- **Does your app collect or share user data?** → **Yes**.
+- **Is all data encrypted in transit?** → **Yes** (HTTPS everywhere).
+- **Do you provide a way to request data deletion?** → **Yes** (in-app account deletion exists) —
+  give the deletion path / URL.
+- Then, per data type, mark **Collected** and/or **Shared** (Shared = sent to a third party like
+  Meta for advertising), plus purpose:
+
+| Data type (Play category) | Collected | Shared (Meta) | Purpose |
+|---|---|---|---|
+| Personal info → **Email address** | ✅ | — | Account management, App functionality |
+| Personal info → **User IDs** | ✅ | ✅ | Analytics, Advertising |
+| Personal info → **Name** (if collected) | ✅ | — | App functionality |
+| Financial info → **Purchase history** | ✅ | ✅ | Analytics, Advertising |
+| App activity → **App interactions** | ✅ | ✅ | Analytics, Advertising |
+| App activity → **Other user-generated content** (notes) | ✅ | — | App functionality |
+| App info & performance → **Crash logs** | ✅ | — | Analytics |
+| App info & performance → **Diagnostics** | ✅ | — | Analytics |
+| Device or other IDs → **Device or other IDs** (advertising ID) | ✅ | ✅ | Advertising |
+
+"Shared with Meta" reflects the Meta App Events SDK + advertising-ID collection. Firebase/RC data
+is processed on your behalf (service providers) → mark **Collected** (not necessarily Shared),
+per Play's definitions.
 
 ---
 

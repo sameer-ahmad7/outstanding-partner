@@ -260,6 +260,9 @@
           if (res.ok) {
             show("You're on the list ✅ Check your inbox — we'll email you when Android goes live.", true);
             form.reset();
+            // Conversion signal: waitlist signup → Meta Pixel Lead + GA4 generate_lead
+            try { if (window.fbq) window.fbq('track', 'Lead', { content_name: 'waitlist' }); } catch (e) {}
+            try { if (window.gtag) window.gtag('event', 'generate_lead', { method: 'waitlist' }); } catch (e) {}
           } else {
             show('Something went wrong — please try again.', false);
           }

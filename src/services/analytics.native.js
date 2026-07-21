@@ -16,18 +16,38 @@ import { Capacitor } from '@capacitor/core';
 const isNative = () => Capacitor?.isNativePlatform?.() || false;
 let inited = false;
 
+// iOS refuses to show the ATT prompt unless the app is in the *active* state, so a
+// cold-start call silently no-ops behind the splash screen. Wait for active first.
+async function whenAppActive() {
+  try {
+    const { App } = await import('@capacitor/app');
+    const { isActive } = await App.getState();
+    if (isActive) return;
+    await new Promise((resolve) => {
+      let done = false;
+      const finish = () => { if (!done) { done = true; resolve(); } };
+      App.addListener('appStateChange', ({ isActive: active }) => { if (active) finish(); });
+      setTimeout(finish, 5000); // don't hang forever
+    });
+  } catch { /* @capacitor/app unavailable — fall through */ }
+}
+
 export async function initNativeTracking() {
   if (inited || !isNative()) return;
   inited = true;
+  console.log('[tracking] init on', Capacitor.getPlatform());
 
-  // iOS: ask for tracking permission once. Meta's advertiser tracking + Firebase
-  // stay privacy-compliant based on the answer.
+  // iOS: ask for tracking permission once (must be active + after the splash).
   try {
     if (Capacitor.getPlatform() === 'ios') {
+      await whenAppActive();
+      await new Promise((r) => setTimeout(r, 800)); // let the splash dismiss
       const { AppTrackingTransparency } = await import('capacitor-plugin-app-tracking-transparency');
       const res = await AppTrackingTransparency.getStatus();
+      console.log('[ATT] status before request:', res?.status);
       if (res?.status === 'notDetermined') {
-        await AppTrackingTransparency.requestPermission();
+        const after = await AppTrackingTransparency.requestPermission();
+        console.log('[ATT] status after request:', after?.status);
       }
     }
   } catch (e) { console.warn('[ATT]', e?.message || e); }

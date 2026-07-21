@@ -14,6 +14,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         // @capacitor-firebase plugins from the bundled GoogleService-Info.plist.)
         #if canImport(FBSDKCoreKit)
         ApplicationDelegate.shared.application(application, didFinishLaunchingWithOptions: launchOptions)
+        // Surface app events in the Xcode console so the integration is verifiable.
+        Settings.shared.enableLoggingBehavior(.appEvents)
+        print("[Meta] FBSDKCoreKit LINKED ✅ appID=\(Settings.shared.appID ?? "nil") clientToken=\(Settings.shared.clientToken != nil ? "set" : "nil")")
+        #else
+        print("[Meta] FBSDKCoreKit NOT LINKED ❌ — add the FBSDKCoreKit library to the App target; Meta App Events are disabled")
         #endif
         return true
     }

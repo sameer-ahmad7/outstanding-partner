@@ -46,11 +46,22 @@ still need **Xcode / the store consoles** before shipping.
 The iOS project uses **Swift Package Manager**. The Firebase plugins are added automatically
 by `cap sync`, but two things need Xcode once:
 
-### 1. Add the Facebook SDK (FBSDKCoreKit)
-Open `ios/App/App.xcworkspace` (or `.xcodeproj`) → **File → Add Package Dependencies…** →
-paste `https://github.com/facebook/facebook-ios-sdk` → **Add Package** → check **FBSDKCoreKit**
-→ add it to the **App** target. (Until this is added, Meta App Events stay inactive on iOS;
-everything else still builds and runs.)
+### 1. Add **and link** the Facebook SDK (FBSDKCoreKit)
+Two parts — adding the package is **not** enough on its own:
+
+**a) Add the package:** **File → Add Package Dependencies…** → paste
+`https://github.com/facebook/facebook-ios-sdk` → **Dependency Rule: Up to Next Major 17.0.0**
+(don't leave it on `main`) → **Add Package** → tick **FBSDKCoreKit** for the **App** target.
+
+**b) Verify it's LINKED to the target** ← the step that's easy to miss:
+App project → **App target → General → Frameworks, Libraries, and Embedded Content** → **＋** →
+add **FBSDKCoreKit**. If it isn't listed there, the `#if canImport(FBSDKCoreKit)` guard compiles
+all Meta code out and **the SDK silently does nothing** (app still builds fine).
+
+**Confirm it worked:** run the app and check the Xcode console for
+`[Meta] FBSDKCoreKit LINKED ✅ appID=1619043059848775`.
+If you see `[Meta] FBSDKCoreKit NOT LINKED ❌`, step (b) didn't take.
+Quick CLI check: `grep -c FBSDKCoreKit ios/App/App.xcodeproj/project.pbxproj` — must be > 0.
 
 ### 2. Confirm GoogleService-Info.plist is in the app target
 In Xcode, select `GoogleService-Info.plist` (already in `ios/App/App/`) → File Inspector →

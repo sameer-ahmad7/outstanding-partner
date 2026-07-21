@@ -1,6 +1,10 @@
 import UIKit
 import Capacitor
-#if canImport(FBSDKCoreKit)
+// Swift Package Manager exposes the Facebook SDK as `FacebookCore` (which re-exports
+// FBSDKCoreKit); CocoaPods exposes it as `FBSDKCoreKit`. Support either.
+#if canImport(FacebookCore)
+import FacebookCore
+#elseif canImport(FBSDKCoreKit)
 import FBSDKCoreKit
 #endif
 
@@ -12,13 +16,13 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Meta / Facebook App Events. (Firebase is auto-configured by the
         // @capacitor-firebase plugins from the bundled GoogleService-Info.plist.)
-        #if canImport(FBSDKCoreKit)
+        #if canImport(FacebookCore) || canImport(FBSDKCoreKit)
         ApplicationDelegate.shared.application(application, didFinishLaunchingWithOptions: launchOptions)
         // Surface app events in the Xcode console so the integration is verifiable.
         Settings.shared.enableLoggingBehavior(.appEvents)
-        print("[Meta] FBSDKCoreKit LINKED ✅ appID=\(Settings.shared.appID ?? "nil") clientToken=\(Settings.shared.clientToken != nil ? "set" : "nil")")
+        print("[Meta] Facebook SDK LINKED ✅ appID=\(Settings.shared.appID ?? "nil") clientToken=\(Settings.shared.clientToken != nil ? "set" : "nil")")
         #else
-        print("[Meta] FBSDKCoreKit NOT LINKED ❌ — add the FBSDKCoreKit library to the App target; Meta App Events are disabled")
+        print("[Meta] Facebook SDK NOT LINKED ❌ — link the `FacebookCore` product (SPM) to the App target; Meta App Events are disabled")
         #endif
         return true
     }
@@ -39,7 +43,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func applicationDidBecomeActive(_ application: UIApplication) {
         // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
-        #if canImport(FBSDKCoreKit)
+        #if canImport(FacebookCore) || canImport(FBSDKCoreKit)
         AppEvents.shared.activateApp()
         #endif
     }
@@ -51,7 +55,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ app: UIApplication, open url: URL, options: [UIApplication.OpenURLOptionsKey: Any] = [:]) -> Bool {
         // Called when the app was launched with a url. Feel free to add additional processing here,
         // but if you want the App API to support tracking app url opens, make sure to keep this call
-        #if canImport(FBSDKCoreKit)
+        #if canImport(FacebookCore) || canImport(FBSDKCoreKit)
         ApplicationDelegate.shared.application(app, open: url, options: options)
         #endif
         return ApplicationDelegateProxy.shared.application(app, open: url, options: options)

@@ -51,17 +51,17 @@ Two parts — adding the package is **not** enough on its own:
 
 **a) Add the package:** **File → Add Package Dependencies…** → paste
 `https://github.com/facebook/facebook-ios-sdk` → **Dependency Rule: Up to Next Major 17.0.0**
-(don't leave it on `main`) → **Add Package** → tick **FBSDKCoreKit** for the **App** target.
+(don't leave it on `main`) → **Add Package** → tick **FacebookCore** for the **App** target (SPM names the product `FacebookCore`; `FBSDKCoreKit` is the CocoaPods name).
 
 **b) Verify it's LINKED to the target** ← the step that's easy to miss:
 App project → **App target → General → Frameworks, Libraries, and Embedded Content** → **＋** →
-add **FBSDKCoreKit**. If it isn't listed there, the `#if canImport(FBSDKCoreKit)` guard compiles
+add **FacebookCore**. If it isn't listed there, the `#if canImport(FBSDKCoreKit)` guard compiles
 all Meta code out and **the SDK silently does nothing** (app still builds fine).
 
 **Confirm it worked:** run the app and check the Xcode console for
-`[Meta] FBSDKCoreKit LINKED ✅ appID=1619043059848775`.
-If you see `[Meta] FBSDKCoreKit NOT LINKED ❌`, step (b) didn't take.
-Quick CLI check: `grep -c FBSDKCoreKit ios/App/App.xcodeproj/project.pbxproj` — must be > 0.
+`[Meta] Facebook SDK LINKED ✅ appID=1619043059848775`.
+If you see `[Meta] Facebook SDK NOT LINKED ❌`, step (b) didn't take.
+Quick CLI check: `grep -c FacebookCore ios/App/App.xcodeproj/project.pbxproj` — must be > 0.
 
 ### 2. Confirm GoogleService-Info.plist is in the app target
 In Xcode, select `GoogleService-Info.plist` (already in `ios/App/App/`) → File Inspector →

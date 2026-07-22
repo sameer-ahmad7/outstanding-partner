@@ -42,6 +42,10 @@
     .logo img{width:42px;height:42px;border-radius:11px;display:block;box-shadow:0 2px 8px rgba(0,0,0,.14);}
     .brand{font-family:var(--font-display);font-size:19px;font-weight:700;}
     .brand span{color:var(--primary);}
+    .header-actions{display:flex;align-items:center;gap:20px;}
+    .nav-login{font-weight:600;font-size:14px;color:var(--text);white-space:nowrap;}
+    .nav-login:hover{color:var(--primary);}
+    @media (max-width:480px){ .header-actions{gap:14px;} .nav-login{font-size:13px;} .header-cta{padding:10px 18px;} }
     .btn{font:inherit;font-weight:700;cursor:pointer;border:none;border-radius:999px;letter-spacing:.01em;
       background:linear-gradient(135deg,var(--primary),var(--primary-2));color:#fff;padding:12px 26px;font-size:14px;
       box-shadow:0 6px 18px var(--ring);transition:transform .18s, box-shadow .18s;}
@@ -140,7 +144,10 @@
         <img src="/assets/app-icon.png" alt="Outstanding Partner" width="42" height="42" />
         <div class="brand">Outstanding <span>Partner</span></div>
       </div>
-      <a href="#download" class="btn header-cta">Download Free</a>
+      <nav class="header-actions">
+        <a href="/app" class="nav-login">Log in</a>
+        <a href="#download" class="btn header-cta">Download Free</a>
+      </nav>
     </div>
   </header>
 

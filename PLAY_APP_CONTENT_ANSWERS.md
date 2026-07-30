@@ -115,11 +115,17 @@ The app requires an account, and premium is gated — so the reviewer needs work
 
 ### 8. Financial features → **No** (no loans, crypto, banking, etc.).
 
-### 9. Health → **Not a health app in the regulated sense; does NOT use Health Connect.**
-- If asked "does your app access Health Connect?" → **No**.
-- The cycle tracker is **self-entered wellness data**, not medical/clinical, and isn't shared. Answer
-  the health-content questions truthfully on that basis. (The cycle data IS declared under Data safety —
-  see Section E — as "Health info", collected for app functionality, not shared.)
+### 9. Health apps → declare **Period tracking**
+- The **Health features** form asks about health *features* (not just Health Connect). Your app
+  has a menstrual-cycle tracker → tick **"Period tracking"** under Health and fitness. Tick **nothing
+  else** (no fitness/nutrition/sleep/stress; no Medical items).
+- **Health Connect?** → **No** (the app does not use the Health Connect API).
+- **Regional requirements** (step 2) → not a medical device, no medical advice, complies with the
+  privacy policy (which covers cycle data + deletion).
+- ⚠️ Declaring Period tracking means Google's **health-data policy** applies: **health/cycle data must
+  NOT be shared for advertising.** This is already satisfied — in Data safety the cycle data is
+  "Health info → Collected, NOT shared." Keep it that way; only User IDs / Purchase history /
+  App interactions / Advertising ID are shared with Meta.
 
 ### 10. Select app category and contact details
 - **App category:** **Lifestyle** (primary). (Alt: Dating — but Lifestyle fits better and avoids Dating-category policies.)

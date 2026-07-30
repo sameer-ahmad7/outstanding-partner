@@ -35,3 +35,7 @@ supabase/.branches
 # Firebase deploy cache
 .firebase/
 web-legal/app
+android/key.properties
+android/upload-keystore.jks
+*.jks
+*.keystore

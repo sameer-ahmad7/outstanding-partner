@@ -8,6 +8,7 @@
       { "source": "/privacy", "destination": "/privacy.html" },
       { "source": "/support", "destination": "/support.html" },
       { "source": "/terms", "destination": "/terms.html" },
+      { "source": "/delete-account", "destination": "/delete-account.html" },
       { "source": "/auth", "destination": "/auth.html" },
       { "source": "/auth/**", "destination": "/auth.html" },
       { "source": "/app", "destination": "/app/index.html" },

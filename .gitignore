@@ -39,3 +39,5 @@ android/key.properties
 android/upload-keystore.jks
 *.jks
 *.keystore
+android/app/google-services.json
+ios/App/App/GoogleService-Info.plist

@@ -199,28 +199,13 @@
     </div>
   </section>
 
-  <section class="waitlist" id="waitlist">
-    <div class="wrap in">
-      <span class="eyebrow">Coming soon to Android</span>
-      <h2>Be first in line on Google Play</h2>
-      <p>Outstanding Partner is coming to Android. Leave your email and we'll tell you the moment it lands on Google Play.</p>
-      <form class="wform" id="waitlist-form" novalidate>
-        <input type="email" id="waitlist-email" placeholder="you@email.com" aria-label="Email address" required autocomplete="email" />
-        <input type="text" class="hp" id="waitlist-hp" tabindex="-1" autocomplete="off" aria-hidden="true" />
-        <button class="btn" type="submit" id="waitlist-btn">Notify me</button>
-      </form>
-      <p class="wmsg" id="waitlist-msg" role="status" aria-live="polite"></p>
-      <p class="wnote">We'll only email you once — when Android goes live.</p>
-    </div>
-  </section>
-
   <section class="final" id="download">
     <div class="wrap in">
       <h2>Start today.<br><span>She'll notice by tomorrow.</span></h2>
       <p>7 days free. No commitment. Cancel anytime before your trial ends and you won't be charged a thing.</p>
       <div class="stores">
         <a class="appstore" href="https://apps.apple.com/us/app/outstanding-partner/id6778456225" aria-label="Download on the App Store"><img src="/assets/appstore-badge.svg" alt="Download on the App Store" /></a>
-        <a class="googleplay" href="#waitlist" aria-label="Get it on Google Play"><img src="/assets/googleplay-badge.png" alt="Get it on Google Play" /></a>
+        <a class="googleplay" href="https://play.google.com/store/apps/details?id=com.outstandingpartner.app" aria-label="Get it on Google Play"><img src="/assets/googleplay-badge.png" alt="Get it on Google Play" /></a>
       </div>
       <p class="micro">$21.99/month after trial · Cancel anytime</p>
       <p class="italic">She will notice. She will feel it. She will brag about you.</p>
@@ -240,45 +225,5 @@
   </footer>
 
   <div class="mobile-cta"><a href="#download" class="btn">Download Free · 7 Days</a></div>
-
-  <script>
-    (function(){
-      var SUPABASE_URL = "https://avnqmwuvzdkkfnovaibl.supabase.co";
-      var SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImF2bnFtd3V2emRra2Zub3ZhaWJsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODA1NDA2OTUsImV4cCI6MjA5NjExNjY5NX0.VvLNeWYXM1_GiEhzha9VAkEHxnFCuRxjIgDrN0EbmkQ";
-      var form = document.getElementById('waitlist-form');
-      var email = document.getElementById('waitlist-email');
-      var hp = document.getElementById('waitlist-hp');
-      var btn = document.getElementById('waitlist-btn');
-      var msg = document.getElementById('waitlist-msg');
-      function show(text, ok){ msg.textContent = text; msg.className = 'wmsg ' + (ok ? 'ok' : 'err'); }
-      form.addEventListener('submit', function(e){
-        e.preventDefault();
-        show('', true);
-        var val = (email.value || '').trim().toLowerCase();
-        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(val)) { show('Please enter a valid email address.', false); return; }
-        if (hp.value) { show("You're on the list ✅", true); return; } /* honeypot: silently accept bots */
-        btn.disabled = true; btn.textContent = '…';
-        fetch(SUPABASE_URL + '/functions/v1/waitlist-signup', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ email: val, hp: hp.value })
-        }).then(function(res){
-          if (res.ok) {
-            show("You're on the list ✅ Check your inbox — we'll email you when Android goes live.", true);
-            form.reset();
-            // Conversion signal: waitlist signup → Meta Pixel Lead + GA4 generate_lead
-            try { if (window.fbq) window.fbq('track', 'Lead', { content_name: 'waitlist' }); } catch (e) {}
-            try { if (window.gtag) window.gtag('event', 'generate_lead', { method: 'waitlist' }); } catch (e) {}
-          } else {
-            show('Something went wrong — please try again.', false);
-          }
-        }).catch(function(){
-          show('Network error — please try again.', false);
-        }).finally(function(){
-          btn.disabled = false; btn.textContent = 'Notify me';
-        });
-      });
-    })();
-  </script>
 </body>
 </html>

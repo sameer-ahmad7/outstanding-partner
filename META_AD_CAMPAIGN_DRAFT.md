@@ -209,3 +209,52 @@ for purchases later, once volume supports it.
 - [ ] App connected to the ad account (App promotion only) — Events Manager → app data source
 - [ ] Creatives ready: 1:1/4:5 **and** 9:16
 - [ ] Pixel live ✅ (already verified: PageView / DownloadClick / Purchase)
+
+---
+
+## BUILD STATUS — draft created in Ads Manager (2026-08-08)
+
+Campaign built directly in Ads Manager, ad account `3082569935282811`. **Status: In draft — NOT
+published.** Nothing spends until someone clicks Publish.
+
+### ✅ Configured
+| Level | Setting | Value |
+|---|---|---|
+| Campaign | Name | `OP-Android-Installs` |
+| | Objective | App promotion |
+| | Budget | **$10.00/day**, Advantage campaign budget on |
+| | Bid strategy | Highest volume |
+| | Special ad category | None |
+| Ad set | Name | `US-Men-25-45-Android` |
+| | Store / app | Google Play Store → Outstanding Partner (App ID 1619043059848775) |
+| | Performance goal | Maximize number of app installs |
+| | Location | United States |
+| | **Age** | **25 – 45** (hard limit — "use as suggestion" unchecked) |
+| | **Gender** | **Men** (hard limit) |
+| | Advantage+ audience | **Off** (so age/gender are enforced) |
+| | Placements | Advantage+ (auto) → includes **Instagram** Feed/Stories/Reels/Explore |
+| Ad | Name | `Ad1-Know-What-She-Needs` |
+| | Facebook Page | Outstanding Partner (1253838037806552) |
+| | Instagram | Use Facebook Page |
+
+### ⛔ Remaining before it can run
+1. **Media required** — Ads Manager reports *"Please specify the media to run with this ad."*
+   Upload a **video (best) or image**: 1:1 / 4:5 for Feed **and** 9:16 for Stories/Reels.
+2. **Ad copy** — the Primary text / Headline fields appear once media is attached. Paste from the
+   three drafts above.
+3. **Detailed interests** — not added. US + Men + 25–45 is already a solid audience at $10/day and
+   Meta reports ~7.2% better cost-per-result without narrowing; add the interest list above only if
+   you want tighter targeting.
+4. **iOS campaign** — not yet built. Fastest route: **duplicate** `OP-Android-Installs`, rename to
+   `OP-iOS-Installs`, and change **Mobile app store → App Store**. Do this after the creative exists
+   so it copies across.
+
+### ⚠️ One issue worth knowing
+While selecting the app, Ads Manager first returned *"Mobile application could not be found in app
+store."* The Facebook App's Android registration is **correct** (package `com.outstandingpartner.app`,
+class `…MainActivity`, install-referrer key all present) — this was Meta's app-store crawler not yet
+having indexed the freshly published Play listing. It cleared during setup, but if it reappears on
+publish, wait 24–48 h for Meta to index and try again.
+
+**Budget note:** if you build the iOS campaign at $10/day too, total spend becomes **$20/day**. Set
+each to $5/day if $10/day total is the intent.

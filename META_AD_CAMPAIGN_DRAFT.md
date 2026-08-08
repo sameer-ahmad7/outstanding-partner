@@ -292,3 +292,40 @@ Ad `Ad1-Know-What-She-Needs` (ID `120273949083120555`) — **In draft, all edits
 ### Creative files
 `ad-creative/op-ad-1x1.png` (Feed) · `ad-creative/op-ad-9x16.png` (Stories/Reels) — generated from the
 1024px app icon on brand dark, Georgia headline, brand-red trial line.
+
+---
+
+## iOS CAMPAIGN — `OP-iOS-Installs` (draft created)
+
+Built by duplicating the Android campaign (recommendations **unchecked** so it copied our exact
+targeting rather than Meta's Advantage+ overrides).
+
+| Level | Setting | Value |
+|---|---|---|
+| Campaign | Name | `OP-iOS-Installs` (ID 120273950174910555) |
+| | **iOS 14+ campaign** | **On** — required to reach iOS 14.5+; without it the only store option is "Apple App Store (iOS 13.7 or earlier)" |
+| | App | Outstanding Partner (Apple App ID 1619043059848775) |
+| | SKAdNetwork reporting | ✅ On |
+| | iOS 14+ campaign limit | 0 of 24 used |
+| | Budget | $10/day (inherited) |
+| Ad set | Name | `US-Men-25-45-iOS` |
+| | Mobile app store | **Apple App Store** (inherited from campaign) |
+| | Attribution | Meta's attribution for iOS 14+ (Aggregated Event Measurement) |
+| | Targeting | US · Men · 25–45 (copied from Android) |
+| Ad | `Ad1-Know-What-She-Needs` | copy + creative carried over |
+
+### 🔧 Config fix applied along the way
+The iOS app would not appear in Ads Manager's app picker. Root cause: the Facebook App's **iOS
+platform had an empty "iPhone Store ID"**. Set it to **`6778456225`** in
+developers.facebook.com → App settings → Basic → iOS → **Saved**. The app became selectable
+immediately after.
+
+### ⛔ Remaining blockers
+1. **`#2446333` "application could not be found in app store"** — same class as the Android one.
+   The iPhone Store ID was only just added, so Meta's store crawler hasn't re-validated yet.
+   Expect this to clear on its own (minutes → up to ~24 h). Re-open the draft and it should go green.
+2. **Verified phone number on the ad account (`#3858013`)** — account-level, must be done by the
+   account owner.
+
+### ⚠️ Budget
+Two campaigns × $10/day = **$20/day** ($600/mo). Set each to $5/day if $10/day total was intended.

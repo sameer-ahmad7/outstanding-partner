@@ -258,3 +258,37 @@ publish, wait 24–48 h for Meta to index and try again.
 
 **Budget note:** if you build the iOS campaign at $10/day too, total spend becomes **$20/day**. Set
 each to $5/day if $10/day total is the intent.
+
+
+---
+
+## FINAL DRAFT STATE (complete except account verification)
+
+Ad `Ad1-Know-What-She-Needs` (ID `120273949083120555`) — **In draft, all edits saved.**
+
+| Item | Value |
+|---|---|
+| Creative setup | 1/1 — App store details on |
+| **Media** | ✅ `op-ad-1x1.png` (1080×1080) uploaded + cropped |
+| **Primary text** | "Most men love their partner. Very few know how to show it consistently…" (full Ad 1 copy) |
+| **Headline** | Know exactly what she needs |
+| **Call to action** | Install now |
+| Facebook Page | Outstanding Partner |
+| Instagram | Use Facebook Page |
+| Advantage+ image generation | **Declined** — AI variants inserted stock people/scenes that shouldn't represent the brand without client approval |
+| Advantage+ enhancements | **All off** — especially *Text improvements*, which can rewrite copy into personal-attribute phrasing that Meta's own policy rejects |
+
+### ⛔ Only remaining blocker (account-level, needs you)
+**"You must have a verified phone number associated with your ad account. (#3858013)"**
+→ Click **Add phone number** in Ads Manager and verify. This is your contact detail, so it's yours to enter.
+
+### After that
+1. Optionally upload `op-ad-9x16.png` as a second media for Stories/Reels placement.
+2. Optionally add Ad 2 / Ad 3 copy as extra text options (Primary text supports up to 5, Headline up to 5)
+   — or as separate ads.
+3. **Duplicate** `OP-Android-Installs` → rename `OP-iOS-Installs` → change **Mobile app store → App Store**.
+4. Review, then **Publish** when the client is ready to spend.
+
+### Creative files
+`ad-creative/op-ad-1x1.png` (Feed) · `ad-creative/op-ad-9x16.png` (Stories/Reels) — generated from the
+1024px app icon on brand dark, Georgia headline, brand-red trial line.

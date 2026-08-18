@@ -14,9 +14,14 @@ export default function Paywall({
   const pkgs = (off && off.availablePackages) || [];
   const monthly = pkgs.find(p => p.packageType === 'MONTHLY') || pkgs.find(p => /month/i.test(p.identifier || ''));
   const annual = pkgs.find(p => p.packageType === 'ANNUAL') || pkgs.find(p => /(annual|year)/i.test(p.identifier || ''));
+  // storeReady === false means RevenueCat returned no offering (misconfigured products,
+  // missing store setup, or no network). Previously we fell back to hardcoded prices, so a
+  // completely non-functional paywall still LOOKED normal — the user tapped Subscribe and
+  // silently got nothing. Surface it instead of masking it.
+  const storeReady = !!(monthly || annual);
   const monthlyPrice = (monthly && monthly.product && monthly.product.priceString) || '$21.99';
   const annualPrice = (annual && annual.product && annual.product.priceString) || '$224.99';
-  const chosen = selectedPlan === 'annual' ? annual : monthly;
+  const chosen = selectedPlan === 'annual' ? (annual || monthly) : (monthly || annual);
 
   const trialText = (pkg) => {
     try {
@@ -81,9 +86,17 @@ export default function Paywall({
       {planCard('annual', 'Yearly', annualPrice, '/yr', `${trialText(annual)}, then billed yearly`, 'BEST VALUE')}
       {planCard('monthly', 'Monthly', monthlyPrice, '/mo', `${trialText(monthly)}, then billed monthly`)}
 
+      {!storeReady && !isPreviewMode && (
+        <div style={{ background: "#2a1414", border: "1px solid #e74c3c50", borderRadius: 10, padding: "10px 14px", margin: "4px 0 10px" }}>
+          <div style={{ fontSize: 12, color: "#e74c3c", fontWeight: 700, marginBottom: 3 }}>Plans couldn’t be loaded</div>
+          <div style={{ fontSize: 11, color: "#c98b84", lineHeight: 1.5 }}>We can’t reach the store right now, so purchases are unavailable. Please check your connection and try again.</div>
+          <button onClick={() => subscription.refresh?.()} style={{ background: "transparent", border: "1px solid #e74c3c60", color: "#e74c3c", borderRadius: 8, padding: "6px 12px", fontSize: 11, fontWeight: 700, cursor: "pointer", marginTop: 8 }}>Retry</button>
+        </div>
+      )}
+
       {subMsg && <div style={{ fontSize: 12, color: "#e74c3c", textAlign: "center", margin: "2px 0 8px" }}>{subMsg}</div>}
 
-      <button onClick={doSubscribe} disabled={subscription.busy} style={{ width: "100%", background: "linear-gradient(135deg,#c0392b,#8e44ad)", color: "#fff", border: "none", borderRadius: 12, padding: "16px 14px", fontSize: 15, fontWeight: 800, cursor: "pointer", marginTop: 4, opacity: subscription.busy ? 0.7 : 1, letterSpacing: "0.02em" }}>
+      <button onClick={doSubscribe} disabled={subscription.busy || (!storeReady && !isPreviewMode)} style={{ width: "100%", background: "linear-gradient(135deg,#c0392b,#8e44ad)", color: "#fff", border: "none", borderRadius: 12, padding: "16px 14px", fontSize: 15, fontWeight: 800, cursor: "pointer", marginTop: 4, opacity: (subscription.busy || (!storeReady && !isPreviewMode)) ? 0.55 : 1, letterSpacing: "0.02em" }}>
         {subscription.busy ? "Processing…" : isPreviewMode ? "Enter App →" : "Start 7-Day Free Trial →"}
       </button>
       <button onClick={doRestore} disabled={subscription.busy} style={{ width: "100%", background: "transparent", border: "none", color: "#888", fontSize: 13, cursor: "pointer", padding: "11px" }}>Restore Purchases</button>

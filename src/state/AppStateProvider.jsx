@@ -59,7 +59,9 @@ export function AppStateProvider({ children, onRehydrated }) {
   const [lifetimeCheckedFor, setLifetimeCheckedFor] = useState(null);
 
   // granted via redeemed access code
-  const [selectedPlan, setSelectedPlan] = useState("annual"); // paywall: 'annual' | 'monthly'
+  const [selectedPlan, setSelectedPlan] = useState("monthly"); // paywall default: start on the LOW-price plan.
+  // Defaulting to "annual" meant tapping "Start 7-Day Free Trial" opened a $224.99/yr
+  // purchase sheet — severe sticker shock and a likely cause of zero conversions.
   
   // paywall: 'annual' | 'monthly'
   const [subMsg, setSubMsg] = useState(""); // paywall status/error message

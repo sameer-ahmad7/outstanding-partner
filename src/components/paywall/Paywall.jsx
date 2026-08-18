@@ -23,18 +23,23 @@ export default function Paywall({
   const annualPrice = (annual && annual.product && annual.product.priceString) || '$224.99';
   const chosen = selectedPlan === 'annual' ? (annual || monthly) : (monthly || annual);
 
-  const trialText = (pkg) => {
+  // Only claim a free trial when the store actually reports one. Previously this fell back to
+  // "7-day free trial" unconditionally, so the paywall could promise a trial the user isn't
+  // eligible for (e.g. they already used it) — the store sheet would then ask for full price,
+  // which reads as a bait-and-switch and kills trust at the moment of purchase.
+  const trialOf = (pkg) => {
     try {
       const ip = pkg && pkg.product && pkg.product.introPrice;
       if (ip && Number(ip.price) === 0 && ip.periodNumberOfUnits) {
         const u = String(ip.periodUnit || '').toLowerCase();
         const unit = u.includes('day') ? 'day' : u.includes('week') ? 'week' : u.includes('month') ? 'month' : u.includes('year') ? 'year' : u;
         const n = ip.periodNumberOfUnits;
-        return `${n}-${unit}${n > 1 ? 's' : ''} free trial`;
+        return { label: `${n}-${unit}${n > 1 ? 's' : ''} free`, n, unit };
       }
     } catch (e) { /* ignore */ }
-    return '7-day free trial';
+    return null;
   };
+  const chosenTrial = () => trialOf(selectedPlan === 'annual' ? annual : monthly);
 
   const doSubscribe = async () => {
     setSubMsg('');
@@ -75,7 +80,7 @@ export default function Paywall({
       <div style={{ textAlign: "center", marginBottom: 16 }}>
         <div style={{ fontSize: 11, color: "#c0392b", textTransform: "uppercase", letterSpacing: "0.16em", fontWeight: 700, marginBottom: 8 }}>Outstanding Partner</div>
         <div style={{ fontSize: 24, fontWeight: 700, fontFamily: "'Playfair Display',serif", lineHeight: 1.2, marginBottom: 6 }}>Be the partner she brags about.</div>
-        <div style={{ fontSize: 13, color: "#888", lineHeight: 1.6 }}>Start with a 7-day free trial. Cancel anytime.</div>
+        <div style={{ fontSize: 13, color: "#888", lineHeight: 1.6 }}>{chosenTrial() ? `Start with a ${chosenTrial().n}-${chosenTrial().unit} free trial. Cancel anytime.` : 'Cancel anytime.'}</div>
       </div>
 
       <div style={{ background: "#0a1a0a", border: "1px solid #27ae6030", borderRadius: 12, padding: "9px 14px", marginBottom: 16, display: "flex", gap: 10, alignItems: "center" }}>
@@ -83,8 +88,10 @@ export default function Paywall({
         <div style={{ fontSize: 11, color: "#27ae60", fontWeight: 700 }}>Built with psychologists · relationship science</div>
       </div>
 
-      {planCard('annual', 'Yearly', annualPrice, '/yr', `${trialText(annual)}, then billed yearly`, 'BEST VALUE')}
-      {planCard('monthly', 'Monthly', monthlyPrice, '/mo', `${trialText(monthly)}, then billed monthly`)}
+      {planCard('annual', 'Yearly', annualPrice, '/yr',
+        trialOf(annual) ? `${trialOf(annual).label}, then ${annualPrice}/yr` : `Billed yearly`, 'BEST VALUE')}
+      {planCard('monthly', 'Monthly', monthlyPrice, '/mo',
+        trialOf(monthly) ? `${trialOf(monthly).label}, then ${monthlyPrice}/mo` : `Billed monthly`)}
 
       {!storeReady && !isPreviewMode && (
         <div style={{ background: "#2a1414", border: "1px solid #e74c3c50", borderRadius: 10, padding: "10px 14px", margin: "4px 0 10px" }}>
@@ -96,8 +103,15 @@ export default function Paywall({
 
       {subMsg && <div style={{ fontSize: 12, color: "#e74c3c", textAlign: "center", margin: "2px 0 8px" }}>{subMsg}</div>}
 
+      {storeReady && chosenTrial() && (
+        <div style={{ textAlign: "center", fontSize: 12, color: "#27ae60", fontWeight: 700, margin: "2px 0 8px" }}>
+          $0 due today · You won’t be charged until your {chosenTrial().n}-{chosenTrial().unit} trial ends
+        </div>
+      )}
+
       <button onClick={doSubscribe} disabled={subscription.busy || (!storeReady && !isPreviewMode)} style={{ width: "100%", background: "linear-gradient(135deg,#c0392b,#8e44ad)", color: "#fff", border: "none", borderRadius: 12, padding: "16px 14px", fontSize: 15, fontWeight: 800, cursor: "pointer", marginTop: 4, opacity: (subscription.busy || (!storeReady && !isPreviewMode)) ? 0.55 : 1, letterSpacing: "0.02em" }}>
-        {subscription.busy ? "Processing…" : isPreviewMode ? "Enter App →" : "Start 7-Day Free Trial →"}
+        {subscription.busy ? "Processing…" : isPreviewMode ? "Enter App →"
+          : chosenTrial() ? `Start ${chosenTrial().n}-${chosenTrial().unit} Free Trial →` : "Subscribe →"}
       </button>
       <button onClick={doRestore} disabled={subscription.busy} style={{ width: "100%", background: "transparent", border: "none", color: "#888", fontSize: 13, cursor: "pointer", padding: "11px" }}>Restore Purchases</button>
 

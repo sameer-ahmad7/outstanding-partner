@@ -192,3 +192,56 @@ Everything else I can do with existing access.
    support emails; the paywall handles it honestly but the client should know.
 3. **Metric optics** — WS3 makes paywall-view conversion look worse. Agree the denominator first.
 4. **Ads are still paused** and should stay paused until WS1+WS2 ship and a real purchase is verified.
+
+---
+
+# DECISIONS — signed off 2026-08-19
+
+### 1. Annual: confirmed — hide from new users, keep the product alive ✅
+Agreed and this is exactly the right mechanism. Renewals are handled by Apple/Google **against the
+product**, not the offering; the offering only controls what the app *displays*. So removing the
+package from the RC `default` offering hides it from everyone new while existing subscribers keep
+renewing untouched.
+
+⚠️ **Applies to BOTH legacy products, not just annual.** RevenueCat shows 1 active subscription at
+**$19 MRR**, which is ~$21.99 minus the ~15% store cut — i.e. the existing subscriber is almost
+certainly on the **$21.99 monthly**, not annual. So:
+- Keep alive (do not delete/deactivate): `…app.monthly` ($21.99) **and** `…app.yearly` ($224.99)
+- Remove **both** from the `default` offering
+- Offer only the new `…app.monthly2` ($14.99, 1-month trial)
+
+### 2. Trial eligibility: acknowledged ✅
+Users who consumed the 7-day trial get no 1-month trial. Paywall already degrades honestly to
+"Subscribe →" via `trialOf()`. No code change. Expect occasional support questions.
+
+### 3. Keep email/password **alongside** Apple + Google ✅ — ⚠️ raises the linking risk
+Supporting both is correct for accessibility, but it makes **account linking the single biggest
+technical risk in WS1**, because the collision case is now guaranteed to occur:
+
+> User signs up `bob@x.com` + password → later taps "Continue with Google" as `bob@x.com`.
+> If Supabase mints a **new user id**, then because **RevenueCat `app_user_id` = Supabase user id**,
+> that paying user's subscription **appears to vanish**. They will email support saying they were
+> charged and lost access.
+
+**Required before release:**
+- Enable identity linking in Supabase Auth so a verified matching email attaches to the existing user
+- Test the exact sequence above **with a real paying test account** on iOS and Android
+- Add a fallback path: if entitlement is missing after login, call `restorePurchases()` automatically
+
+### 4. Reviews: Apple feed only — ✅ and now much simpler
+Dropping Google Play removes the whole server-side burden. **Verified the Apple RSS feed returns
+`access-control-allow-origin: *`**, so the website can fetch it **directly from the browser**:
+
+- ❌ No Supabase table, no Edge Function, no cron, no Play service account
+- ✅ Small script on `web-legal/index.html`: fetch → filter 4★+ → render → hide section if empty
+- Endpoint: `https://itunes.apple.com/us/rss/customerreviews/id=6778456225/sortBy=mostRecent/json`
+
+Scope drops from ~a day of backend work to roughly an afternoon.
+
+**Two things the client should know:**
+- It will show **iPhone reviews only** — Android reviews will never appear (no public Play API).
+- There are still **0 reviews**, so it stays hidden until real ones exist. The in-app rating prompt
+  is what will actually produce them — that's the higher-value half of WS4.
+
+### 5. Metric = trials per install ✅
+Agreed up front so WS3 isn't misread as a regression.

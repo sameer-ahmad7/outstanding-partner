@@ -245,3 +245,76 @@ Scope drops from ~a day of backend work to roughly an afternoon.
 
 ### 5. Metric = trials per install ✅
 Agreed up front so WS3 isn't misread as a regression.
+
+
+---
+
+# ⚠️ WS2 REWRITTEN — 2026-08-21: one-time $14.99, NOT a subscription
+
+**Client decision:** *"I am moving away from subscription model. Please make it a 1 time price of
+$14.99."* This supersedes the "$14.99/mo + 1-month trial" decision recorded above.
+
+## 🔴 The consequence that changes an earlier decision: THE FREE TRIAL IS NO LONGER POSSIBLE
+
+Free trials and introductory offers are a **subscription-only feature** on both Apple and Google.
+A **non-consumable / one-time product cannot have a free trial** — there is no store mechanism for it.
+
+So the "1 month free" agreed the day before **cannot ship** alongside a one-time price. Pick one:
+- **One-time $14.99, no trial** ← current instruction
+- Subscription $14.99/mo with 1-month free ← the previous instruction
+
+**This makes WS3 (freemium) essential rather than optional.** With no store trial, letting people use
+part of the app for free is now the *only* way anyone can try before buying. Given the funnel data
+(27 of 47 left at the signup wall), shipping a one-time paywall with **no** free tier would likely
+convert worse than what we have now. **WS3 should ship in the same release as WS2, not after it.**
+
+## Product changes
+
+| Platform | Old | New |
+|---|---|---|
+| App Store | Auto-renewable subscription | **Non-Consumable IAP** `com.outstandingpartner.app.lifetime` @ $14.99 |
+| Google Play | Subscription | **One-time product** (in-app product) `com.outstandingpartner.app.lifetime` @ $14.99 |
+| RevenueCat | monthly/annual packages | non-subscription product → `premium` entitlement (grants **lifetime**) |
+| Web | RC Billing subscription | ⚠️ see open question below |
+
+⚠️ **Still keep the old subscription products alive** — the existing $21.99/mo subscriber must keep
+renewing. Remove them from the offering only. (Unchanged from the earlier decision.)
+
+## Code changes required (more than the subscription swap needed)
+
+1. **`packageType` handling — this WILL break.** RevenueCat reports non-subscription products as
+   `LIFETIME` (or `CUSTOM`), never `MONTHLY`/`ANNUAL`. `Paywall.jsx:15-16` looks only for
+   MONTHLY/ANNUAL, so **the paywall would find no package and show "Plans couldn't be loaded."**
+   → find the lifetime package instead; drop the two-card selector entirely.
+2. **Delete the trial machinery** — `trialOf()`, `chosenTrial()`, the "$0 due today" line, and the
+   "7-day free trial" copy. None of it applies. (Keep the code pattern in git history in case they
+   revert to subscriptions.)
+3. ⚠️ **Replace the auto-renew legal text.** `Paywall.jsx:119` currently states *"Subscriptions
+   auto-renew unless turned off at least 24 hours before…"*. For a one-time purchase that is
+   **factually wrong** and an App Review risk. Replace with one-time wording:
+   *"One-time purchase. Pay once, keep full access forever."*
+4. **"Restore Purchases" becomes critical, not optional.** It's the only way a user recovers access
+   after reinstalling or changing device. Already present — must be tested explicitly.
+5. `selectedPlan` state in `AppStateProvider.jsx` becomes dead → remove.
+
+## Store metadata that becomes WRONG the moment this ships
+- **App Store description** currently ends with the auto-renewable subscription block ($21.99/mo,
+  $224.99/yr, 7-day trial, auto-renew terms). Must be rewritten to one-time $14.99 or it is
+  misleading → rejection risk.
+- **Play description** — same.
+- **Landing page** (`web-legal/index.html`) — "7 days free", "$21.99/month after trial", the hero
+  and download-section micro-copy.
+- **Meta ad copy** (`META_AD_CAMPAIGN_DRAFT.md`) — all three ads say "7 days free".
+
+## ❓ Open question — web payments
+RevenueCat **Web Billing is subscription-oriented**; one-time product support needs verifying before
+we promise it. Options if unsupported:
+- (a) keep the web app on a subscription and sell one-time only in the apps (inconsistent pricing — poor)
+- (b) plain **Stripe Checkout** one-time payment, then grant the entitlement via RevenueCat's REST API
+- (c) drop web purchasing; web becomes companion-only for people who bought in-app
+**Must confirm before quoting a date for the web side.**
+
+## Revenue note (raised once, client has reaffirmed — proceeding)
+$14.99 once vs $21.99/month recurring means each customer pays roughly **1.5 months' worth, ever**,
+with no renewal. Sustainable only if acquisition cost stays well under ~$15 — which at the current
+$3–10 cost-per-install is plausible but leaves thin margin. Flagged, decision is the client's.

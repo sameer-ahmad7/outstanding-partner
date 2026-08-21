@@ -24,6 +24,7 @@
     "@capacitor/preferences": "^8.0.1",
     "@capacitor/splash-screen": "^8.0.1",
     "@capacitor/status-bar": "^8.0.2",
+    "@capgo/capacitor-social-login": "^8.4.4",
     "@revenuecat/purchases-capacitor": "^13.1.5",
     "@revenuecat/purchases-js": "^1.47.3",
     "@supabase/supabase-js": "^2.107.0",

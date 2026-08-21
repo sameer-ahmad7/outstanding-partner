@@ -22,6 +22,8 @@ export default function AppShell() {
     emailVerified,
     handleForgot,
     handleLogin,
+    handleSocialLogin,
+    socialAuthAvailable,
     handleSignup,
     handleResendVerification,
     handleCheckVerification,
@@ -89,6 +91,7 @@ export default function AppShell() {
           authName={authName} setAuthName={setAuthName}
           authError={authError} setAuthError={setAuthError} authLoading={authLoading}
           handleLogin={handleLogin} handleSignup={handleSignup} handleForgot={handleForgot}
+          handleSocialLogin={handleSocialLogin} socialAuthAvailable={socialAuthAvailable}
           handleResendVerification={handleResendVerification} handleResetPassword={handleResetPassword}
           handleCheckVerification={handleCheckVerification}
           pendingVerifyEmail={pendingVerifyEmail}

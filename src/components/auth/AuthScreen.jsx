@@ -9,10 +9,39 @@ export default function AuthScreen({
   authName, setAuthName,
   authError, setAuthError, authLoading,
   handleLogin, handleSignup, handleForgot,
+  handleSocialLogin, socialAuthAvailable,
   handleResendVerification, handleResetPassword, handleCheckVerification,
   pendingVerifyEmail,
   isPreviewMode, setLegalView,
 }) {
+  // Apple + Google. Apple is listed first on iOS because App Store Guideline 4.8 requires
+  // Sign in with Apple to be offered at least as prominently as any other social option.
+  const socialBlock = (verb) => {
+    const canApple = socialAuthAvailable?.('apple');
+    const canGoogle = socialAuthAvailable?.('google');
+    if (!canApple && !canGoogle) return null;
+    const btn = (label, icon, onClick, dark) => (
+      <button key={label} onClick={onClick} disabled={authLoading}
+        style={{ width: "100%", background: dark ? "#000" : "#fff", color: dark ? "#fff" : "#1f1f1f",
+          border: dark ? "1px solid #333" : "none", borderRadius: 14, padding: "14px 20px", fontSize: 15,
+          fontWeight: 600, cursor: "pointer", marginBottom: 10, display: "flex", alignItems: "center",
+          justifyContent: "center", gap: 10, opacity: authLoading ? 0.7 : 1, fontFamily: "inherit" }}>
+        <span style={{ fontSize: 17, lineHeight: 1 }}>{icon}</span>{label}
+      </button>
+    );
+    return (
+      <div>
+        {canApple && btn(`${verb} with Apple`, "", () => handleSocialLogin('apple'), true)}
+        {canGoogle && btn(`${verb} with Google`, "G", () => handleSocialLogin('google'), false)}
+        <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "14px 0 16px" }}>
+          <div style={{ flex: 1, height: 1, background: "#2a2a2a" }} />
+          <div style={{ fontSize: 11, color: "#555", letterSpacing: "0.08em" }}>OR</div>
+          <div style={{ flex: 1, height: 1, background: "#2a2a2a" }} />
+        </div>
+      </div>
+    );
+  };
+
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const submitReset = () => {
@@ -40,6 +69,8 @@ export default function AuthScreen({
               <div style={{ fontSize: 12, color: "#888", lineHeight: 1.5 }}>No backend connected. Tap Sign In to enter the app directly — no real account needed for testing.</div>
             </div>
           )}
+          {socialBlock('Sign in')}
+
           <input value={authEmail} onChange={e => setAuthEmail(e.target.value)} placeholder="Email address" type="email" style={{ width: "100%", background: "#1a1a1a", border: "1px solid #333", color: "#f0ece4", borderRadius: 12, padding: "14px 16px", fontSize: 15, boxSizing: "border-box", fontFamily: "inherit", marginBottom: 10 }} />
           <input value={authPassword} onChange={e => setAuthPassword(e.target.value)} placeholder={isPreviewMode ? "Any password (preview mode)" : "Password"} type="password" onKeyDown={e => e.key === "Enter" && handleLogin()} style={{ width: "100%", background: "#1a1a1a", border: "1px solid #333", color: "#f0ece4", borderRadius: 12, padding: "14px 16px", fontSize: 15, boxSizing: "border-box", fontFamily: "inherit", marginBottom: 6 }} />
           <div style={{ textAlign: "right", marginBottom: 20 }}>
@@ -80,6 +111,8 @@ export default function AuthScreen({
             ))}
           </div>
           <input value={authName} onChange={e => setAuthName(e.target.value)} placeholder="Your first name" style={{ width: "100%", background: "#1a1a1a", border: "1px solid #333", color: "#f0ece4", borderRadius: 12, padding: "14px 16px", fontSize: 15, boxSizing: "border-box", fontFamily: "inherit", marginBottom: 10 }} />
+          {socialBlock('Sign up')}
+
           <input value={authEmail} onChange={e => setAuthEmail(e.target.value)} placeholder="Email address" type="email" style={{ width: "100%", background: "#1a1a1a", border: "1px solid #333", color: "#f0ece4", borderRadius: 12, padding: "14px 16px", fontSize: 15, boxSizing: "border-box", fontFamily: "inherit", marginBottom: 10 }} />
           <input value={authPassword} onChange={e => setAuthPassword(e.target.value)} placeholder="Create a password (min 8 characters)" type="password" style={{ width: "100%", background: "#1a1a1a", border: "1px solid #333", color: "#f0ece4", borderRadius: 12, padding: "14px 16px", fontSize: 15, boxSizing: "border-box", fontFamily: "inherit", marginBottom: 6 }} />
           <div style={{ fontSize: 11, color: "#555", marginBottom: 16, lineHeight: 1.5 }}>By signing up you agree to our Terms of Service and Privacy Policy. You can cancel anytime from your account settings.</div>

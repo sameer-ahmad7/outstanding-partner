@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, createContext, useContext } from "react";
 import { hasSupabase } from '../services/supabaseClient.js';
 import { signIn, signUp, signOutUser, sendPasswordReset, getSession, onAuthChange, toAuthUser, verifyEmailOtp, updatePassword, resendVerification } from '../services/auth.service.js';
+import { signInWithApple, signInWithGoogle, socialAuthAvailable } from '../services/socialAuth.service.js';
 import { useCloudSync } from '../hooks/useCloudSync.js';
 import { deleteAccount } from '../services/account.service.js';
 import { getUserSubscription } from '../services/appData.service.js';
@@ -1183,6 +1184,28 @@ export function AppStateProvider({ children, onRehydrated }) {
   // ─── Auth Handlers ────────────────────────────────────────────
   // In preview/artifact mode (no API_URL) — bypass auth automatically
   
+  // Apple / Google sign-in. Supabase establishes the session, and the existing
+  // onAuthChange listener picks it up and populates authUser — so there is nothing to set here.
+  // Social accounts arrive with a verified email, so they skip the verify screen entirely.
+  const handleSocialLogin = async (provider) => {
+    if (isPreviewMode) { return handleLogin(); }
+    setAuthError("");
+    setAuthLoading(true);
+    try {
+      if (provider === 'apple') await signInWithApple();
+      else await signInWithGoogle();
+      // On web this redirects away; on native the session is live by now.
+    } catch (e) {
+      const msg = (e && (e.message || e.error_description)) || '';
+      // User backing out of the native sheet is not an error worth showing.
+      if (!/cancel|abort|closed|dismiss|1001/i.test(msg)) {
+        setAuthError((e && e.message) || 'Could not sign in. Please try again.');
+      }
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
   const handleLogin = async () => {
     if (isPreviewMode) {
       // Dev bypass — skip auth, go straight in
@@ -2033,6 +2056,8 @@ export function AppStateProvider({ children, onRehydrated }) {
     markActivityDone,
     pickGenText,
     handleLogin,
+    handleSocialLogin,
+    socialAuthAvailable,
     handleSignup,
     handleForgot,
     handleResendVerification,

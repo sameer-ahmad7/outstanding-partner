@@ -110,3 +110,90 @@ volume and depth, not because they've hit an arbitrary wall.
 
 This also keeps the build simpler: **one entitlement instead of two**, fewer store products, and less
 to go wrong — which matters when we're still trying to get the first conversion.
+
+---
+
+# ADDENDUM — Splitting the cycle tracker (client wants part of it paid)
+
+Client agreed the tiering but doesn't want free account-holders getting the **whole** cycle feature.
+Fair. And usefully, **the split already exists in the data** — no need to invent one.
+
+Each phase in `CYCLE_PHASES` (`src/constants/data.js`) is layered:
+
+```js
+menstrual: {
+  label:"Menstrual", days:[1..5], emoji:"🌑",
+  tip:"She needs rest, warmth, and deep understanding.",     // ← one-line summary
+  whatSheNeeds:{
+    headline:"She needs to be held, not handled.",
+    physical:[…4 items], emotional:[…4 items],
+    fromYou:[…5 actions],                                     // ← the playbook
+    avoid:[…4 things not to do],                              // ← the highest-value part
+  },
+}
+```
+
+So we can split on **two natural axes** rather than all-or-nothing.
+
+## Axis 1 — Depth: *where she is* (free) vs *what to do about it* (paid)
+
+| Free (with account) | Paid |
+|---|---|
+| Enter her cycle start date | The full **"What she needs"** playbook |
+| **Today's** day + phase — *"Day 17 of 28 · Luteal 🌘"* | `fromYou` — 5 specific actions for this phase |
+| The one-line `tip` — *"She needs patience and emotional safety."* | `avoid` — **4 things NOT to do right now** |
+| Today's mission, already phase-matched | `physical` + `emotional` needs breakdown |
+
+The free part proves the app **knows where she is**. The paid part tells you **what to actually do**.
+That's a clean, honest line a user can understand in one sentence.
+
+> **`avoid` is the strongest paid hook in the whole app.** *"4 things not to do this week"* is exactly
+> what this audience is afraid of getting wrong. I'd make it the single most visible locked item.
+
+## Axis 2 — Time: *today* (free) vs *ahead and behind* (paid)
+
+| Free | Paid |
+|---|---|
+| Today only | **The forecast** — *"She enters her toughest week in 3 days"* |
+| | Cycle history and patterns over time |
+| | Phase-change reminders / notifications |
+
+⚠️ **The forecast is already the headline marketing claim.** The landing page says:
+*"Know when she's getting cramps before she does — by tracking her cycle you'll know days in advance
+when she's entering her toughest week."*
+
+That advance warning is the genuinely valuable, genuinely premium capability — and pricing it that
+way makes the marketing and the product agree instead of contradicting each other.
+
+## What this looks like to a free user
+
+They open the app, enter her start date, and see:
+
+> **Day 17 of 28 · Luteal 🌘**
+> *She needs patience and emotional safety.*
+> **Today's mission:** …
+>
+> 🔒 **What she needs this week** — 5 things to do, 4 to avoid
+> 🔒 **Coming up:** her next phase change — *unlock to see 3 days ahead*
+
+They get a real, working, cycle-aware app. They can see exactly what they're missing and why it's
+worth $8.99. Nothing feels withheld out of spite — it feels like there's more.
+
+## Why I'd still keep phase *detection* free
+It's the ten-second proof that this app is different from every other relationship app, and it's what
+the ads sold them. Charging to find out *which phase she's in* means the ad's promise isn't delivered
+until after payment — the same mismatch that cost us 19 of 19 conversions on the $224.99 sheet.
+Charging for **what to do about it** and **what's coming** has none of that problem.
+
+## Revised tiering — cycle rows only
+
+**👤 Free with account**
+- Set up her cycle · today's day + phase · the one-line tip · today's phase-matched mission
+
+**💳 Paid $8.99/mo**
+- Full "What she needs" playbook per phase (do / avoid / physical / emotional)
+- **The forecast** — advance warning of phase changes
+- Cycle history and insights
+- Phase-change reminders
+
+Everything else in the earlier tiering is unchanged.

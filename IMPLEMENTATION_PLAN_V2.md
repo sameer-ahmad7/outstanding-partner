@@ -318,3 +318,84 @@ we promise it. Options if unsupported:
 $14.99 once vs $21.99/month recurring means each customer pays roughly **1.5 months' worth, ever**,
 with no renewal. Sustainable only if acquisition cost stays well under ~$15 — which at the current
 $3–10 cost-per-install is plausible but leaves thin margin. Flagged, decision is the client's.
+
+
+---
+
+# ⚠️ WS2 REWRITTEN AGAIN — 2026-08-21 (v4): $8.99/mo sub + $8.99 one-time cycle unlock
+
+**Client decision:** back to subscriptions, *"$8.99 subscription with 1 month free trial"*, **monthly
+only**, trialling the model for **3 months**. **Plus** a separate **$8.99 one-time purchase to unlock
+the menstrual cycle feature.** Supersedes the one-time-$14.99 decision above.
+
+✅ **The 1-month free trial is possible again** — trials are a subscription feature, and the main
+product is a subscription once more.
+
+## 🔴 This introduces a SECOND entitlement — a real architecture change
+
+The codebase assumes exactly **one** entitlement today:
+`revenuecat.service.js:4` and `revenuecatWeb.service.js:6` → `ENTITLEMENT_ID = 'premium'`, and every
+access check reads only that. A separate paid cycle unlock means **two independent entitlements**:
+
+| Entitlement | Granted by | Unlocks |
+|---|---|---|
+| `premium` | $8.99/mo subscription | everything |
+| `cycle` | $8.99 one-time **and** (see Q1) the subscription | menstrual cycle tracker |
+
+Work: parameterise both RC services by entitlement, expose `hasPremium` / `hasCycle` separately from
+`useSubscription`, and gate the cycle UI on `hasPremium || hasCycle`.
+
+## ❓ Q1 — Does the subscription include the cycle tracker? **NEEDS AN ANSWER BEFORE BUILD**
+Two readings of the instruction, very different outcomes:
+- **(a) Subscription includes cycle** — the $8.99 one-time is an *alternative* for people who only
+  want the tracker. ← **strongly recommended**
+- **(b) Cycle is an add-on even for subscribers** — a paying subscriber is asked for another $8.99.
+  This reads as a bait-and-switch, will generate refund requests and 1-star reviews.
+
+Assume **(a)** unless told otherwise: attach the subscription product to **both** entitlements in
+RevenueCat so subscribers get cycle automatically.
+
+## ❓ Q2 — The two prices are identical, which makes the one-time hard to justify
+$8.99/month for **everything** (with a free first month) versus $8.99 once for **one feature**.
+A rational user compares them and takes the subscription every time — same price, more features,
+first month free, cancel anytime. The one-time may simply never sell.
+
+Options worth putting to the client:
+- Price the cycle unlock **below** the subscription (e.g. $4.99) so it reads as the cheaper entry point
+- Or price it **above** one month (e.g. $19.99) framed as "pay once, keep it forever"
+- Or drop it and keep one simple product
+
+Not a blocker — buildable as specified — but the client should decide knowingly.
+
+## Products to create
+| Platform | Product | Type | Price |
+|---|---|---|---|
+| App Store | `com.outstandingpartner.app.monthly899` | Auto-renewable sub, same subscription group | $8.99/mo + **1-month free intro offer** |
+| App Store | `com.outstandingpartner.app.cycle` | **Non-Consumable** | $8.99 |
+| Play | `com.outstandingpartner.app.monthly899` | Subscription, base plan `monthly` | $8.99/mo + **1-month free trial**, new-customer eligibility |
+| Play | `com.outstandingpartner.app.cycle` | **One-time product** | $8.99 |
+| RC Billing (web) | new $8.99/mo product | subscription | + 1-month trial |
+
+⚠️ **Keep the old $21.99 monthly and $224.99 annual alive** (1 existing subscriber). Remove from the
+offering only. **Unchanged across all four pricing revisions.**
+
+⚠️ **Trial eligibility, again:** anyone who used the 7-day trial cannot get the 1-month trial —
+same subscription group, one intro offer per account ever. `trialOf()` already degrades honestly.
+
+## Code changes
+1. **Keep** `trialOf()` / `chosenTrial()` / "$0 due today" — a subscription trial is back in play.
+   (The v3 plan said delete them. Do **not**.)
+2. **Remove the annual card**; paywall becomes a single $8.99/mo plan. `selectedPlan` → dead.
+3. **Two entitlements** — see above. Biggest piece of work in WS2.
+4. **New purchase point for the cycle unlock**, placed at the cycle feature itself, not on the main
+   paywall (contextual upsell converts far better than a second option on the wall).
+5. Auto-renew legal text at `Paywall.jsx:119` is **correct again** for the subscription — but the
+   cycle purchase needs its own one-time wording next to its button.
+6. Update store descriptions, landing page, and all three Meta ads ($21.99/7-day → $8.99/1-month).
+
+## ⚠️ Housekeeping note — product sprawl
+This is the **fourth** pricing model in three days ($21.99+$224.99 → $14.99/mo → $14.99 one-time →
+$8.99/mo + $8.99 cycle). Store products **cannot be deleted** once created, only deactivated, and each
+revision leaves permanent clutter in App Store Connect / Play / RevenueCat. Recommend we **hold this
+model for the agreed 3 months** before changing again — and create the products only once Q1/Q2 are
+settled, so we don't add another unused pair.

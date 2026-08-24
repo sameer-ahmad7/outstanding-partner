@@ -4,6 +4,11 @@ export default function TextsTab() {
   const scope = useAppState();
   const {
     EXTENDED_TEXTS,
+    LockStrip,
+    isPremium,
+    hasAccount,
+    requirePremium,
+    requireAccount,
     NEURO,
     PHASE_SCRIPTS,
     copyText,
@@ -185,7 +190,15 @@ export default function TextsTab() {
           fontWeight: 700,
           marginBottom: 8
         }}>She Said</div>
-                  <div style={{
+                  {!hasAccount && <div style={{
+          marginBottom: 8
+        }}>
+                    <LockStrip onUpgrade={() => requireAccount('signup')}
+            title="Keep a note of what she says"
+            body="Create a free account so your notes are saved and follow you between devices."
+            cta="Sign up free"/>
+                  </div>}
+                  {hasAccount && <div style={{
           display: "flex",
           gap: 8,
           marginBottom: 8
@@ -228,8 +241,8 @@ export default function TextsTab() {
             fontWeight: 700,
             cursor: "pointer"
           }}>+</button>
-                  </div>
-                  {sheSaid.slice(0, 3).map((s, i) => <div key={i} style={{
+                  </div>}
+                  {hasAccount && sheSaid.slice(0, 3).map((s, i) => <div key={i} style={{
           background: "#1a1a1a",
           border: "1px solid #2a2a2a",
           borderRadius: 8,
@@ -281,7 +294,11 @@ export default function TextsTab() {
         const pool = EXTENDED_TEXTS.filter(t => !t.phase || t.phase === phase.key);
         const available = pool.filter(t => !recentlySent.includes(t.id));
         const activePool = available.length >= 3 ? available : pool;
-        return activePool.slice(0, 6).map((t, i) => {
+        // Free tier gets one ready-to-send text a day (FEATURE_TIERING_FINAL.md); premium gets
+        // the phase-matched shortlist. The locked strip below names the size of the library —
+        // free users should see what they're missing, not just hit a shorter list.
+        const visible = isPremium ? activePool.slice(0, 6) : activePool.slice(0, 1);
+        return visible.map((t, i) => {
           const alreadySent = (sentTextIds || []).includes(t.id);
           return <div key={i} style={{
             background: "#1a1a1a",
@@ -342,6 +359,11 @@ export default function TextsTab() {
                       </div>;
         });
       })()}
+
+              {!isPremium && <LockStrip onUpgrade={requirePremium}
+        title={`${EXTENDED_TEXTS.length}+ more texts, matched to her phase`}
+        body="You get one a day for free. Premium unlocks the whole library."
+        cta="Unlock"/>}
               </div>
   );
 }

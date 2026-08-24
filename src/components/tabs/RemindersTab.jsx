@@ -11,7 +11,17 @@ export default function RemindersTab() {
     sheSaid,
     sheSaidDone,
     sheSaidInput,
+    PremiumGate,
+    hasAccount,
+    requireAccount,
   } = scope;
+
+  if (!hasAccount) return (
+    <PremiumGate feature="What she said"
+      blurb="Capture what she mentions — her dreams, what she wants, what worries her. Create a free account so these notes are saved and follow you between devices."
+      cta="Sign up free"
+      onUpgrade={() => requireAccount('signup')} />
+  );
 
   return (
     <div>

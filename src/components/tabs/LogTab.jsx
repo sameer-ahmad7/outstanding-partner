@@ -5,7 +5,18 @@ export default function LogTab() {
   const {
     currentStreak,
     taskLog,
+    PremiumGate,
+    hasAccount,
+    requireAccount,
   } = scope;
+
+  // Saved progress is the point of this tab, and progress you can lose isn't progress.
+  if (!hasAccount) return (
+    <PremiumGate feature="Your progress, saved"
+      blurb="Create a free account to keep your streak, your monthly score and your mission history — on every device you sign in on."
+      cta="Sign up free"
+      onUpgrade={() => requireAccount('signup')} />
+  );
 
   return (
     <div>

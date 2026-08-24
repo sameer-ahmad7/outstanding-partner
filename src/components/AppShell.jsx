@@ -22,6 +22,9 @@ export default function AppShell() {
     emailVerified,
     handleForgot,
     handleLogin,
+    authIntent, setAuthIntent,
+    paywallOpen, setPaywallOpen,
+    hasAccount,
     handleSocialLogin,
     socialAuthAvailable,
     handleSignup,
@@ -34,7 +37,6 @@ export default function AppShell() {
     onboardSlide,
     onboarded,
     replayGuide,
-    selectedPlan,
     setAuthEmail,
     setAuthError,
     setAuthName,
@@ -57,10 +59,11 @@ export default function AppShell() {
     wifeNickname,
   } = scope;
 
-  // Auth surface shows when there's no user, the email isn't verified yet (hard gate),
-  // or a password-recovery deep link is in progress. effectiveAuthScreen forces the
-  // verify/reset screen regardless of the last-used auth tab.
-  const showAuth = passwordRecovery || !authUser || !emailVerified;
+  // effectiveAuthScreen forces the verify/reset screen regardless of the last-used auth tab.
+  // WS3: auth is no longer a wall in front of the app. It appears when the user asks for it
+  // (authIntent), when a password-recovery deep link is in flight, or when someone has signed up
+  // but not yet verified — that last case still needs resolving before their account works.
+  const showAuth = passwordRecovery || authIntent || (!!authUser && !emailVerified);
   const effectiveAuthScreen = passwordRecovery
     ? "reset"
     : (authUser && !emailVerified ? "verify" : authScreen);
@@ -96,28 +99,29 @@ export default function AppShell() {
           handleCheckVerification={handleCheckVerification}
           pendingVerifyEmail={pendingVerifyEmail}
           isPreviewMode={isPreviewMode} setLegalView={setLegalView}
+          onClose={authIntent ? () => setAuthIntent(false) : null}
         />
       )}
 
-      {!showAuth&&!subscriptionReady&&(
+      {!showAuth&&!subscriptionReady&&hasAccount&&(
         <div style={{position:"fixed",inset:0,background:"#0d0d0d",zIndex:9998,display:"flex",alignItems:"center",justifyContent:"center"}}>
           <div style={{width:32,height:32,border:"3px solid #2a2a2a",borderTopColor:"#c0392b",borderRadius:"50%",animation:"opSpin 0.8s linear infinite"}}/>
           <style>{`@keyframes opSpin{to{transform:rotate(360deg)}}`}</style>
         </div>
       )}
 
-      {!showAuth&&subscriptionReady&&!subscribed&&(
+      {!showAuth&&subscriptionReady&&!subscribed&&paywallOpen&&(
         <Paywall
           subscription={subscription}
           isPreviewMode={isPreviewMode}
-          selectedPlan={selectedPlan} setSelectedPlan={setSelectedPlan}
           subMsg={subMsg} setSubMsg={setSubMsg}
           setSubscribed={setSubscribed}
+          onClose={() => setPaywallOpen(false)}
           setAuthUser={setAuthUser} setLegalView={setLegalView}
         />
       )}
 
-      {!showAuth&&subscribed&&(!onboarded||replayGuide)&&(
+      {!showAuth&&(!onboarded||replayGuide)&&(
         <Onboarding
           onboardSlide={onboardSlide} setOnboardSlide={setOnboardSlide}
           onboarded={onboarded} setOnboarded={setOnboarded}

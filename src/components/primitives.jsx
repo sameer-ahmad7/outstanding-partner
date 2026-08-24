@@ -74,31 +74,37 @@ export function NeuroBadge({chem,showLabel=false}) {
   return <span style={{background:n.color+"20",color:n.color,border:`1px solid ${n.color}40`,borderRadius:20,padding:"3px 10px",fontSize:11,fontWeight:700,display:"inline-flex",alignItems:"center",gap:4}}>{n.emoji}{showLabel?` ${n.label}`:""}</span>;
 }
 
-export function PremiumGate({onUpgrade, feature="This feature"}) {
+export function PremiumGate({onUpgrade, feature="This feature", blurb, cta="Unlock with Premium"}) {
   return (
     <div style={{background:"linear-gradient(135deg,#1a0a1a,#0d0d0d)",border:"1px solid #8e44ad40",borderRadius:16,padding:24,textAlign:"center"}}>
       <div style={{fontSize:28,marginBottom:8}}>👑</div>
       <div style={{fontSize:16,fontWeight:700,color:"#f0ece4",marginBottom:6,fontFamily:"'Playfair Display',serif"}}>{feature}</div>
-      <div style={{fontSize:13,color:"#888",lineHeight:1.6,marginBottom:20}}>This is a <strong style={{color:"#8e44ad"}}>Premium Plan</strong> feature — your AI relationship strategist, available 24/7. Upgrade for personalized AI advice, weekly reports, and monthly game plans built around your wife specifically.</div>
-      <div style={{display:"flex",gap:8,marginBottom:12}}>
-        <div style={{flex:1,background:"#1a1a2a",borderRadius:12,padding:"12px 10px",textAlign:"center"}}>
-          <div style={{fontSize:10,color:"#555",fontWeight:700,textTransform:"uppercase",marginBottom:3}}>Current</div>
-          <div style={{fontSize:18,fontWeight:800,color:"#666"}}>$21.99</div>
-          <div style={{fontSize:10,color:"#444"}}>System Plan</div>
-        </div>
-        <div style={{flex:1,background:"#1a0a1a",border:"1.5px solid #8e44ad50",borderRadius:12,padding:"12px 10px",textAlign:"center"}}>
-          <div style={{fontSize:10,color:"#8e44ad",fontWeight:700,textTransform:"uppercase",marginBottom:3}}>Upgrade</div>
-          <div style={{fontSize:18,fontWeight:800,color:"#8e44ad"}}>$49.99</div>
-          <div style={{fontSize:10,color:"#8e44ad80"}}>Premium Plan</div>
-        </div>
+      <div style={{fontSize:13,color:"#888",lineHeight:1.6,marginBottom:20}}>
+        {blurb || <>This is a <strong style={{color:"#8e44ad"}}>Premium</strong> feature. Unlock her full cycle playbook, unlimited missions and texts, saved history and phase-change reminders.</>}
       </div>
       <button onClick={onUpgrade} style={{width:"100%",background:"linear-gradient(135deg,#8e44ad,#c0392b)",color:"#fff",border:"none",borderRadius:12,padding:"13px 16px",fontSize:14,fontWeight:700,cursor:"pointer"}}>
-        Upgrade to Premium Plan
+        {cta}
       </button>
     </div>
   );
 }
 
+// Inline lock strip for teasing content in place — shows what's behind the lock without
+// pretending the feature doesn't exist. Used for the cycle detail, forecast and history.
+export function LockStrip({onUpgrade, title, body, cta="Unlock"}) {
+  return (
+    <div onClick={onUpgrade} role="button" tabIndex={0}
+      onKeyDown={(e)=>{if(e.key==="Enter"||e.key===" ")onUpgrade&&onUpgrade();}}
+      style={{background:"linear-gradient(135deg,#1a0a1a,#111)",border:"1px solid #8e44ad40",borderRadius:14,padding:"14px 16px",cursor:"pointer",display:"flex",gap:12,alignItems:"center"}}>
+      <span style={{fontSize:18}}>🔒</span>
+      <div style={{flex:1,minWidth:0}}>
+        <div style={{fontSize:13,fontWeight:700,color:"#f0ece4"}}>{title}</div>
+        {body&&<div style={{fontSize:11.5,color:"#8a8a8a",lineHeight:1.5,marginTop:2}}>{body}</div>}
+      </div>
+      <span style={{fontSize:11,fontWeight:700,color:"#8e44ad",whiteSpace:"nowrap"}}>{cta} →</span>
+    </div>
+  );
+}
 
 export function SHCBadge({type}) {
   if(!type||!SHC[type]) return null;
@@ -142,7 +148,13 @@ export function NeuroPanel({chems,why,taskId}) {
   );
 }
 
-export function PhaseCard({phase, showNeeds=false}) {
+// `locked` splits this card along the free/paid line (FEATURE_TIERING_FINAL.md):
+//   free  — which phase she's in, the one-line tip, the need badges. Detection stays free on
+//           purpose: it's the hook, and it's useless to him without the guidance below it.
+//   paid  — the What She Needs block: headline, From You, physical/emotional, and Avoid.
+// When locked we still show the headline, because naming the problem is what makes the
+// answer worth paying for; hiding it entirely just looks like a missing feature.
+export function PhaseCard({phase, showNeeds=false, locked=false, onUpgrade}) {
   const [expanded, setExpanded] = useState(false);
   const wn = phase.whatSheNeeds;
   return (
@@ -152,8 +164,14 @@ export function PhaseCard({phase, showNeeds=false}) {
         <div style={{background:`${phase.color}22`,border:`1.5px solid ${phase.color}50`,borderRadius:16,padding:"14px 18px",marginBottom:10}}>
           <div style={{fontSize:10,color:phase.color,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.14em",marginBottom:4}}>What She Needs Right Now</div>
           <div style={{fontSize:16,fontWeight:700,color:"#f0ece4",fontFamily:"'Playfair Display',serif",lineHeight:1.3,marginBottom:10}}>{wn.headline}</div>
+          {locked&&(
+            <LockStrip onUpgrade={onUpgrade}
+              title={`${wn.fromYou.length} things to do — and ${wn.avoid.length} to avoid`}
+              body="Exactly what she needs from you in this phase, and the moves that backfire."
+              cta="Unlock"/>
+          )}
           {/* From you — top priority */}
-          <div style={{marginBottom:8}}>
+          {!locked&&<div style={{marginBottom:8}}>
             <div style={{fontSize:10,color:phase.color,fontWeight:700,textTransform:"uppercase",letterSpacing:"0.08em",marginBottom:6}}>From You</div>
             {wn.fromYou.map((item,i)=>(
               <div key={i} style={{display:"flex",gap:8,marginBottom:5}}>
@@ -161,12 +179,12 @@ export function PhaseCard({phase, showNeeds=false}) {
                 <span style={{fontSize:13,color:"#ddd",lineHeight:1.5}}>{item}</span>
               </div>
             ))}
-          </div>
+          </div>}
           {/* Expand for more */}
-          <button onClick={()=>setExpanded(v=>!v)} style={{background:"transparent",border:`1px solid ${phase.color}40`,borderRadius:10,padding:"5px 12px",fontSize:11,color:phase.color,cursor:"pointer",fontWeight:600}}>
+          {!locked&&<button onClick={()=>setExpanded(v=>!v)} style={{background:"transparent",border:`1px solid ${phase.color}40`,borderRadius:10,padding:"5px 12px",fontSize:11,color:phase.color,cursor:"pointer",fontWeight:600}}>
             {expanded?"▲ Less":"▼ Full breakdown"}
-          </button>
-          {expanded&&(
+          </button>}
+          {!locked&&expanded&&(
             <div style={{marginTop:12,display:"flex",flexDirection:"column",gap:10}}>
               {[{label:"Physical needs",items:wn.physical},{label:"Emotional needs",items:wn.emotional},{label:"Avoid this",items:wn.avoid,warn:true}].map(section=>(
                 <div key={section.label}>

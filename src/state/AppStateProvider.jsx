@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, createContext, useContext } from "react";
+import { useState, useEffect, useRef, useCallback, createContext, useContext } from "react";
 import { hasSupabase } from '../services/supabaseClient.js';
 import { signIn, signUp, signOutUser, sendPasswordReset, getSession, onAuthChange, toAuthUser, verifyEmailOtp, updatePassword, resendVerification } from '../services/auth.service.js';
 import { signInWithApple, signInWithGoogle, socialAuthAvailable } from '../services/socialAuth.service.js';
@@ -10,7 +10,7 @@ import { rcLogOut } from '../services/revenuecat.service.js';
 import { initStatusBar, isNative } from '../services/platform.service.js';
 import { NEURO, SHC, LPP, TASK_LPP, ZODIAC_SIGNS, CHINESE_ZODIAC, NUMEROLOGY, REMINDER_LIBRARY, CATEGORIES, DAYS_OF_WEEK, DAY_LABELS, CYCLE_PHASES, NEEDS, NEED_COLORS, DAILY_TASKS, TEXT_SAMPLES, MONTHS, DAILY_TRUTHS, PHASE_SCRIPTS, DIAGNOSTIC_QUESTIONS, CHALLENGE_30, CHALLENGE_60, CHALLENGE_90, CHALLENGE_MONTHLY, SEASONAL_THEMES, EXTENDED_TASKS, EXTENDED_TEXTS, DATE_IDEAS, TEXT_SHC, TASK_SHC, SEASONAL_CAMPAIGNS, HOME_ACTIVITIES, HOME_ACTIVITY_TASKS, HOME_ACTIVITY_REMINDERS, ALL_REMINDERS } from '../constants/data.js';
 import { getLifePathNumber, getCurrentPhase, getCycleDay, getToday, getDayOfYear, getDailyTextFromLibrary, getDailyActivityFromLibrary, API_URL, APP_SECRET, fetchAI, _store, safeGet, safeGetJSON, copyText, safeSet, getChineseZodiac, getZodiacFromDate, getMonthKey, getActiveCampaign, getWeekKey, getCurrentMonth, getSeasonalTheme, getVarietyTask, getVarietyTexts } from '../utils/helpers.js';
-import { NeedBadge, NeuroBadge, PremiumGate, SHCBadge, SHCRow, LPPBadge, NeuroPanel, PhaseCard, ReminderCard } from '../components/primitives.jsx';
+import { NeedBadge, NeuroBadge, PremiumGate, LockStrip, SHCBadge, SHCRow, LPPBadge, NeuroPanel, PhaseCard, ReminderCard } from '../components/primitives.jsx';
 
 const AppStateContext = createContext(null);
 
@@ -60,11 +60,9 @@ export function AppStateProvider({ children, onRehydrated }) {
   const [lifetimeCheckedFor, setLifetimeCheckedFor] = useState(null);
 
   // granted via redeemed access code
-  const [selectedPlan, setSelectedPlan] = useState("monthly"); // paywall default: start on the LOW-price plan.
-  // Defaulting to "annual" meant tapping "Start 7-Day Free Trial" opened a $224.99/yr
-  // purchase sheet — severe sticker shock and a likely cause of zero conversions.
-  
-  // paywall: 'annual' | 'monthly'
+  const [selectedPlan, setSelectedPlan] = useState("monthly");
+  // Vestigial: the paywall now offers one plan ($8.99/mo, first month free) and ignores this.
+  // Kept only because it is still threaded through the provider's exported scope.
   const [subMsg, setSubMsg] = useState(""); // paywall status/error message
   
   const [subTier, setSubTier] = useState("basic"); // fresh start // "basic" | "premium"
@@ -403,6 +401,42 @@ export function AppStateProvider({ children, onRehydrated }) {
   
   // Subscription-only app: an active subscription unlocks everything (no free tier).
   const isPremium = subscribed || isPreviewMode;
+
+  // ---- Access tiers (WS3 freemium) --------------------------------------------------
+  // Three tiers, per FEATURE_TIERING_FINAL.md:
+  //   'anon'    — no account. Today's mission, 1 text/day, a few date ideas, read-only phase info.
+  //   'account' — signed in. Adds cycle setup + today's phase + tip, saved progress, She Said.
+  //   'premium' — subscribed. Everything.
+  // Auth and the paywall used to be hard gates that blocked the whole app; 27 of 47 users left at
+  // the signup wall without seeing anything. They are now opened on demand instead.
+  const hasAccount = isPreviewMode || (!!authUser && emailVerified);
+  const accessTier = isPremium ? 'premium' : hasAccount ? 'account' : 'anon';
+
+  // Opened by a locked feature (or the user tapping Sign in / Upgrade), rather than on launch.
+  const [authIntent, setAuthIntent] = useState(false);   // show the auth screen
+  const [paywallOpen, setPaywallOpen] = useState(false); // show the paywall
+
+  // Call from any locked UI. Anonymous users are sent to sign-up first (cheaper ask),
+  // signed-in users straight to the paywall.
+  const requireAccount = useCallback((screen) => {
+    if (hasAccount) return true;
+    setAuthScreen(screen || 'signup');
+    setAuthIntent(true);
+    return false;
+  }, [hasAccount]);
+
+  // Close the auth overlay once the account actually exists. Anonymous work carries over on its
+  // own: useCloudSync seeds the remote row from the local snapshot when the remote is empty, so
+  // everything done before signing up is already in localStorage and gets uploaded as-is.
+  useEffect(() => { if (hasAccount) setAuthIntent(false); }, [hasAccount]);
+  useEffect(() => { if (isPremium) setPaywallOpen(false); }, [isPremium]);
+
+  const requirePremium = useCallback(() => {
+    if (isPremium) return true;
+    if (!hasAccount) { setAuthScreen('signup'); setAuthIntent(true); return false; }
+    setPaywallOpen(true);
+    return false;
+  }, [isPremium, hasAccount]);
 
   // Email verification hard gate: dev bypass / screenshot mode skip it; otherwise the
   // signed-in user must have a confirmed email before reaching the paywall.
@@ -1751,6 +1785,7 @@ export function AppStateProvider({ children, onRehydrated }) {
     NeedBadge,
     NeuroBadge,
     PremiumGate,
+    LockStrip,
     SHCBadge,
     SHCRow,
     LPPBadge,
@@ -2035,6 +2070,12 @@ export function AppStateProvider({ children, onRehydrated }) {
     isPreviewMode,
     SCREENSHOT,
     isPremium,
+    hasAccount,
+    accessTier,
+    authIntent, setAuthIntent,
+    paywallOpen, setPaywallOpen,
+    requireAccount,
+    requirePremium,
     subscription,
     navStateRef,
     requestPermission,

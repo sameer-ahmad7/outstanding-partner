@@ -4,6 +4,12 @@ export default function TodayTab() {
   const scope = useAppState();
   const {
     DAILY_TRUTHS,
+    LockStrip,
+    isPremium,
+    hasAccount,
+    accessTier,
+    requirePremium,
+    requireAccount,
     DATE_IDEAS,
     EXTENDED_TASKS,
     EXTENDED_TEXTS,
@@ -267,7 +273,14 @@ export default function TodayTab() {
               lineHeight: 1.6,
               fontWeight: 500
             }}>{current.need}</div>
-                        {(phase.whatSheNeeds?.fromYou || []).slice(0, 2).map((item, i) => <div key={i} style={{
+                        {!isPremium && (phase.whatSheNeeds?.fromYou || []).length > 0 && <div style={{
+              marginTop: 10
+            }}>
+                            <LockStrip onUpgrade={requirePremium}
+                              title={`${phase.whatSheNeeds.fromYou.length} moves that work — ${phase.whatSheNeeds.avoid.length} that backfire`}
+                              body="Her full playbook for this phase." cta="Unlock"/>
+                          </div>}
+                        {isPremium && (phase.whatSheNeeds?.fromYou || []).slice(0, 2).map((item, i) => <div key={i} style={{
               display: "flex",
               gap: 8,
               marginTop: 8,

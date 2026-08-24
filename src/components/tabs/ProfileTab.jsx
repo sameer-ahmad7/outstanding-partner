@@ -33,6 +33,11 @@ export default function ProfileTab() {
     NeedBadge,
     NeuroBadge,
     PremiumGate,
+    LockStrip,
+    requirePremium,
+    requireAccount,
+    hasAccount,
+    accessTier,
     anniversaryDate,
     authUser,
     biggestDream,
@@ -1634,6 +1639,7 @@ export default function ProfileTab() {
           }}>{phase.tip}</p>
                 </div>
     
+                {isPremium && <>
                 {/* 28-day visual calendar */}
                 <div style={{
           marginBottom: 24
@@ -1712,6 +1718,7 @@ export default function ProfileTab() {
             })}
                   </div>
                 </div>
+                </>}
     
                 {/* Phase legend with dates */}
                 <div style={{
@@ -1792,6 +1799,11 @@ export default function ProfileTab() {
           })}
                 </div>
     
+                {!isPremium && <LockStrip onUpgrade={requirePremium}
+                  title="Know what's coming before she does"
+                  body="Her next period, and what to expect week by week — so her toughest days never catch you off guard."
+                  cta="Unlock forecast"/>}
+                {isPremium && <>
                 {/* Next period prediction */}
                 <div style={{
           background: "#1a0a0a",
@@ -1908,6 +1920,7 @@ export default function ProfileTab() {
                       </div>);
           })()}
                 </div>
+                </>}
               </div>}
     
             {/* YOUR CODE — LEAD · PROTECT · PROVIDE */}
@@ -2675,9 +2688,9 @@ export default function ProfileTab() {
     
             {/* GAME PLAN */}
             {profileSection === "gameplan" && <div>
-                {!isPremium ? <PremiumGate feature="Game Plan" onUpgrade={() => {
-          setSubscribed(false);
-        }} /> : <div>
+                {!isPremium ? <PremiumGate feature="Game Plan"
+                  blurb="Your long-game plan — the month ahead mapped to her cycle, with what to plan, what to prepare for, and what to avoid."
+                  onUpgrade={requirePremium} /> : <div>
                 <div style={{
             background: `${phase.color}12`,
             border: `1px solid ${phase.color}30`,

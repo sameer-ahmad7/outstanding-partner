@@ -1,10 +1,18 @@
 import { useAppState } from '../../state/AppStateProvider.jsx';
 
+// Free tier gets a sample of each list, premium gets all of them
+// (FEATURE_TIERING_FINAL.md — "free proves it works, paid gives you more of it").
+const FREE_ACTIVITIES = 3;
+const FREE_DATE_IDEAS = 3;
+
 export default function ActivitiesTab() {
   const scope = useAppState();
   const {
     DATE_IDEAS,
     HOME_ACTIVITIES,
+    LockStrip,
+    isPremium,
+    requirePremium,
     NEURO,
     activityFilter,
     phase,
@@ -63,7 +71,7 @@ export default function ActivitiesTab() {
         fontWeight: 700,
         marginBottom: 10
       }}>🏠 At-Home Activities</div>
-                {HOME_ACTIVITIES.filter(a => activityFilter === "all" || !a.phase || a.phase === activityFilter).map((act, i) => <div key={i} style={{
+                {HOME_ACTIVITIES.filter(a => activityFilter === "all" || !a.phase || a.phase === activityFilter).slice(0, isPremium ? undefined : FREE_ACTIVITIES).map((act, i) => <div key={i} style={{
         background: "#1a1a1a",
         border: "1px solid #2a2a2a",
         borderRadius: 14,
@@ -136,7 +144,7 @@ export default function ActivitiesTab() {
         marginBottom: 10,
         marginTop: 8
       }}>🗓️ Date Ideas</div>
-                {DATE_IDEAS.filter(d => activityFilter === "all" || !d.phase || d.needs && d.needs.includes(activityFilter)).map((d, i) => <div key={i} style={{
+                {DATE_IDEAS.filter(d => activityFilter === "all" || !d.phase || d.needs && d.needs.includes(activityFilter)).slice(0, isPremium ? undefined : FREE_DATE_IDEAS).map((d, i) => <div key={i} style={{
         background: "#1a1a1a",
         border: "1px solid #2a2a2a",
         borderRadius: 14,
@@ -215,6 +223,11 @@ export default function ActivitiesTab() {
                           </span>)}
                       </div>}
                   </div>)}
+
+              {!isPremium && <LockStrip onUpgrade={requirePremium}
+        title={`${HOME_ACTIVITIES.length} activities and ${DATE_IDEAS.length} date ideas`}
+        body={`You're seeing ${FREE_ACTIVITIES + FREE_DATE_IDEAS} of them. Premium unlocks the rest, all matched to her phase.`}
+        cta="Unlock"/>}
               </div>
   );
 }

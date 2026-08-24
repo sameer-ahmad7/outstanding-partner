@@ -78,7 +78,7 @@ export default function SupportScreen({ onClose }) {
           <p style={S.p}><strong style={{ color: '#f0ece4' }}>{APP_NAME} — Full Access</strong></p>
           <p style={S.p}>{SUBSCRIPTION_PRICE} · {SUBSCRIPTION_TRIAL}</p>
         </div>
-        <div style={S.highlight}>✓ No charge during your free trial. Cancel any time before it ends and you will not be billed.</div>
+        <div style={S.highlight}>✓ No charge during your free month. Cancel any time before it ends and you will not be billed.</div>
         <p style={S.p}>Subscriptions automatically renew unless cancelled at least 24 hours before the end of the current period. Manage or turn off auto-renewal in your device's account settings after purchase.</p>
 
         <div style={S.footer}>

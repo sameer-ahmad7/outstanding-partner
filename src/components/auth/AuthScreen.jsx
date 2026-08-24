@@ -13,6 +13,7 @@ export default function AuthScreen({
   handleResendVerification, handleResetPassword, handleCheckVerification,
   pendingVerifyEmail,
   isPreviewMode, setLegalView,
+  onClose,
 }) {
   // Apple + Google. Apple is listed first on iOS because App Store Guideline 4.8 requires
   // Sign in with Apple to be offered at least as prominently as any other social option.
@@ -50,6 +51,11 @@ export default function AuthScreen({
   };
   return (
     <div style={{ position: "fixed", inset: 0, background: "#0d0d0d", zIndex: 9999, display: "flex", flexDirection: "column", justifyContent: "center", padding: "40px 28px", boxSizing: "border-box", overflowY: "auto" }}>
+      {onClose && (
+        <button onClick={onClose} aria-label="Close"
+          style={{ position: "absolute", top: "max(16px,env(safe-area-inset-top))", right: 18, background: "#1a1a1a", border: "1px solid #2a2a2a", color: "#888", fontSize: 17, lineHeight: "30px", width: 32, height: 32, borderRadius: "50%", cursor: "pointer", padding: 0 }}>×</button>
+      )}
+
       {authScreen === "login" && (
         <div>
           <div style={{ fontSize: 11, color: "#c0392b", textTransform: "uppercase", letterSpacing: "0.16em", fontWeight: 700, marginBottom: 8 }}>Outstanding Partner</div>
@@ -83,7 +89,7 @@ export default function AuthScreen({
           <div style={{ textAlign: "center", fontSize: 13, color: "#555" }}>
             Don't have an account?{" "}
             <button onClick={() => { setAuthScreen("signup"); setAuthError(""); }} style={{ background: "transparent", border: "none", color: "#c0392b", fontSize: 13, fontWeight: 700, cursor: "pointer", padding: 0 }}>
-              Start free trial
+              Sign up free
             </button>
           </div>
         </div>
@@ -92,8 +98,8 @@ export default function AuthScreen({
       {authScreen === "signup" && (
         <div>
           <div style={{ fontSize: 11, color: "#c0392b", textTransform: "uppercase", letterSpacing: "0.16em", fontWeight: 700, marginBottom: 8 }}>Outstanding Partner</div>
-          <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "'Playfair Display',serif", lineHeight: 1.2, marginBottom: 6 }}>Start your 7-day free trial.</div>
-          <div style={{ fontSize: 14, color: "#666", marginBottom: 12 }}>Then $21.99/month. Cancel anytime.</div>
+          <div style={{ fontSize: 28, fontWeight: 700, fontFamily: "'Playfair Display',serif", lineHeight: 1.2, marginBottom: 6 }}>Create your free account.</div>
+          <div style={{ fontSize: 14, color: "#666", marginBottom: 12 }}>Free to use. Save your progress and track her cycle — no card needed.</div>
 
           <div style={{ background: "linear-gradient(135deg,#0a1a0a,#111)", border: "1px solid #27ae6040", borderRadius: 14, padding: "12px 16px", marginBottom: 16, display: "flex", gap: 12, alignItems: "center" }}>
             <div style={{ fontSize: 24, flexShrink: 0 }}>🧠</div>
@@ -103,7 +109,7 @@ export default function AuthScreen({
             </div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", gap: 8, marginBottom: 24, padding: "12px 16px", background: "#1a1a1a", borderRadius: 12, border: "1px solid #2a2a2a" }}>
-            {["200+ phase-matched texts — new ones added every month", "100 date ideas + 60 at-home activities", "Daily missions tailored to her cycle phase", "Full profile: zodiac, numerology, and cycle tracking", "30/60/90-day partner challenge"].map((f, i) => (
+            {["Track her cycle — see her phase every day", "Daily missions tailored to that phase", "Your streak and progress, saved", "The \"She Said\" journal", "Free — upgrade later if you want the full playbook"].map((f, i) => (
               <div key={i} style={{ display: "flex", gap: 10, alignItems: "center" }}>
                 <span style={{ color: "#27ae60", fontWeight: 700, fontSize: 14 }}>✓</span>
                 <span style={{ fontSize: 12, color: "#aaa" }}>{f}</span>

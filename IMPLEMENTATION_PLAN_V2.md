@@ -399,3 +399,70 @@ $8.99/mo + $8.99 cycle). Store products **cannot be deleted** once created, only
 revision leaves permanent clutter in App Store Connect / Play / RevenueCat. Recommend we **hold this
 model for the agreed 3 months** before changing again — and create the products only once Q1/Q2 are
 settled, so we don't add another unused pair.
+
+---
+
+# ✅ WS2 + WS3 IMPLEMENTED — 2026-08-24
+
+Final model (supersedes every earlier variant above): **$8.99/month, first month free, monthly
+only, one entitlement (`premium`). No annual for new users. No separate cycle purchase.**
+
+## What shipped (commit `ceea3aa`)
+
+**The two hard gates are gone.** This was the whole point — 27 of 47 users left at the signup
+wall and 0 of 19 converted on the paywall, because both were walls in front of an app nobody had
+seen yet.
+
+| Before | After |
+|---|---|
+| `showAuth = !authUser \|\| !emailVerified` — signup wall on launch | `showAuth = passwordRecovery \|\| authIntent \|\| (authUser && !emailVerified)` — opens only when asked for |
+| Paywall rendered for every non-subscriber on launch | Paywall opens from `requirePremium()`, dismissible |
+| Onboarding required `subscribed` | Onboarding shows to everyone |
+
+**Access tiers** (`AppStateProvider.jsx`): `accessTier` = `anon` | `account` | `premium`, from
+`hasAccount` + `isPremium`. Two helpers do all the gating — `requireAccount(screen)` opens
+signup, `requirePremium()` opens signup for anon users and the paywall for signed-in ones.
+Overlays auto-close via effects when `hasAccount` / `isPremium` flips true.
+
+**Anonymous → account migration needs no code.** State was already localStorage-backed, and
+`useCloudSync` seeds the remote row from the local snapshot when the remote is empty. Work done
+before signing up uploads as-is on first login.
+
+**Gating applied** (against `FEATURE_TIERING_FINAL.md`):
+
+| Surface | Free | Premium |
+|---|---|---|
+| Today — cycle card | day + phase + one-line tip | `whatSheNeeds` playbook |
+| Texts | 1/day | full 190+ library |
+| Activities / date ideas | 3 + 3 | all 60 + 100 |
+| Profile → Cycle | "Right Now" hero + read-only Phase Schedule | 28-day map, next-period prediction, week-ahead outlook |
+| Profile → Game Plan | — | ✅ |
+| Log (streak/history) | account required | |
+| Remind ("She Said") | account required | |
+
+**Paywall rewritten** — single $8.99 plan, no plan picker, dismissible, with a "what you unlock"
+list. `selectedPlan` is now vestigial.
+
+## Two bugs found and fixed on the way
+
+- `PremiumGate` advertised a **$21.99 → $49.99 two-tier upgrade that does not exist**, and its
+  `onUpgrade` called `setSubscribed(false)`. Under the old always-on wall that bounced you to the
+  paywall; under the new model it would have **stripped a paying subscriber's access**.
+- The signup screen sold *"Start your 7-day free trial — then $21.99/month"*. Signup grants no
+  trial and takes no payment. Now: *"Create your free account."*
+
+## Verified
+
+Build clean, no console errors. Walked the anonymous flow in the browser: lands in onboarding
+(not a wall) → Today shows day/phase/tip with the playbook locked → tapping a lock opens signup
+→ ✕ dismisses it. Premium view re-checked under `VITE_DEV_AUTH_BYPASS` — the 28-day map,
+prediction and week-ahead all still render.
+
+## Still open
+
+- **Store consoles** — see `PRICING_STORE_SETUP.md` (Apple, Play, RevenueCat, in that order).
+- **WS4 reviews section** — Apple RSS only, hidden while empty.
+- **WS1** — social login console setup, then the mandatory identity-linking test with a real
+  paying account.
+- Store listings, landing page and the three Meta ad creatives still quote $21.99 / 7 days.
+- Mobile rebuild — the freemium change needs a build to reach phones.

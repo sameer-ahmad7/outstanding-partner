@@ -1,8 +1,9 @@
 # Store Setup — $8.99/month with the first month free
 
 Everything you need to click through in **App Store Connect**, **Google Play Console** and
-**RevenueCat** to put the new pricing live. Follow the sections in order — RevenueCat is last
-because it needs the products to exist in both stores first.
+**RevenueCat** (both the store products *and* Web Billing / Stripe for the website) to put the
+new pricing live. Follow the sections in order — RevenueCat is last because it needs the
+products to exist in the stores first.
 
 **The model:** $8.99/month · first month free · monthly only · one entitlement (`premium`).
 There is no annual plan for new users and no separate cycle purchase.
@@ -187,6 +188,91 @@ Play), $8.99. That's what the app fetches.
 
 ---
 
+## 3b. RevenueCat Web Billing (Stripe) — the website
+
+**Don't skip this.** Web Billing products are **completely separate** from App Store and Play
+products. Creating `…monthly899` in the two stores does nothing for outstandingpartner.app —
+the website will keep selling $21.99/7-day until you do this part.
+
+Today the web app sells `op_web_monthly` ($21.99) and `op_web_yearly` ($224.99), both with a
+7-day trial, through RevenueCat Web Billing backed by Stripe.
+
+### 3b-1. Create the new web product
+
+**RevenueCat → Products → + New product → app: `Outstanding Partner Web`**
+
+| Field | Value |
+|---|---|
+| Identifier | `op_web_monthly899` |
+| Price | **$8.99** USD |
+| Billing period | **Monthly**, auto-renewing |
+| Free trial | **1 month** |
+
+**You do not create anything in the Stripe dashboard.** RevenueCat creates the matching Stripe
+price for you. If you hand-create a price in Stripe it won't be linked to a RevenueCat product
+and purchases won't grant the entitlement.
+
+### 3b-2. Attach + add to the offering
+
+- **Entitlements → `premium` → Attach** `op_web_monthly899`.
+- **Offerings → `default` → `$rc_monthly` → Attach product** → add `op_web_monthly899`.
+
+So `$rc_monthly` ends up holding **three** products — one per platform:
+
+| Platform | Product in `$rc_monthly` |
+|---|---|
+| App Store | `com.outstandingpartner.app.monthly899` |
+| Play Store | `com.outstandingpartner.app.monthly899:monthly` |
+| Web Billing | `op_web_monthly899` |
+
+That's the whole trick: **one offering, one package, three products.** RevenueCat serves
+whichever one matches the platform the user is on, which is why iOS, Android and web all show
+$8.99 without any per-platform code.
+
+- Detach `op_web_monthly` / `op_web_yearly` from the **offering** (and drop `$rc_annual`
+  entirely, as in step 3c). Leave them attached to the **`premium` entitlement** so any existing
+  web subscriber keeps their access and keeps renewing.
+
+### 3b-3. No code change is needed
+
+The web SDK already normalises into the shape the paywall reads
+(`src/services/revenuecatWeb.service.js`): `$rc_monthly` → `packageType: 'MONTHLY'`, and the
+ISO-8601 trial `P1M` → `introPrice: { price: 0, periodUnit: 'month', periodNumberOfUnits: 1 }`.
+The rewritten paywall picks the monthly package and renders **"1 month free, then $8.99/mo"**
+and **"Start My Free Month"** off exactly those fields. Verified against the installed
+`@revenuecat/purchases-js` enum.
+
+The web app *does* need a redeploy — but for the **freemium** changes, not the price.
+
+### 3b-4. Testing web checkout without spending money
+
+The app has a sandbox switch built in:
+
+```
+https://outstandingpartner.app/app?rcsandbox=1
+```
+
+That flips to the `rcb_` **sandbox** key (Stripe test mode) and remembers it in localStorage, so
+you can run a full checkout with test card `4242 4242 4242 4242`, any future expiry, any CVC.
+Clear it with `?rcsandbox=0` when you're done — **it persists until you do.**
+
+> ⚠️ Create the $8.99 product in **both** the sandbox and production Web Billing setups if
+> RevenueCat has them split, or the sandbox test will show the old price.
+
+### 3b-5. One difference worth knowing about the web trial
+
+Trial eligibility on web is tracked **per RevenueCat customer** — which for us is the Supabase
+user id — not per Apple ID or Google account. Practical consequences:
+
+- Someone who burned the 7-day trial on **iPhone** may still be offered the free month on
+  **web**, because they're different eligibility systems (unless it's the same RevenueCat
+  customer, i.e. they signed in with the same account).
+- Conversely, a new email address on the website is a new customer and gets a fresh free month.
+  If that becomes a problem, it's a Stripe-side abuse question, not something the app controls.
+
+
+---
+
 ## 4. Verify it worked
 
 The paywall reads everything from the store at runtime, so these checks confirm all three
@@ -203,8 +289,12 @@ consoles at once.
 3. The button reads **"Start My Free Month"**, and above it **"$0 due today"**.
 4. Complete a sandbox purchase → the locks disappear immediately.
 
-**In RevenueCat → Customer History:** the test purchase appears with product
-`…monthly899`, entitlement `premium` active, and a **trial** period.
+**On the website** (`outstandingpartner.app/app?rcsandbox=1`): same paywall, same $8.99 and
+free-month lines, and the Stripe checkout opens with test card `4242 4242 4242 4242`.
+
+**In RevenueCat → Customer History:** the test purchase appears with the right product
+(`…monthly899` on mobile, `op_web_monthly899` on web), entitlement `premium` active, and a
+**trial** period.
 
 **Important:** the trial only shows for accounts that have never had one. Use a fresh sandbox
 tester on iOS and a fresh licence-tester Google account on Android, or you'll see full price
@@ -223,6 +313,8 @@ now several places still advertise $21.99 and a 7-day trial:
       (they're still in Draft, so this is free to fix)
 - [ ] **Ship a mobile build** — not needed for the price change itself, but needed for the
       freemium changes that make the new paywall reachable in the first place
+- [ ] **Redeploy the web app** — likewise: the price comes from RevenueCat, but the freemium
+      changes need a deploy
 
 ---
 
@@ -233,6 +325,7 @@ now several places still advertise $21.99 and a 7-day trial:
 | Monthly | `…app.monthly` — $21.99 | **`…app.monthly899` — $8.99** |
 | Annual | `…app.yearly` — $224.99 | *(none)* |
 | Play ref | `…app.monthly:monthly` | **`…app.monthly899:monthly`** |
+| Web (Stripe) | `op_web_monthly` — $21.99 · `op_web_yearly` — $224.99 | **`op_web_monthly899` — $8.99** |
 | Trial | 7 days | **1 month, free** |
 | Entitlement | `premium` | `premium` (unchanged) |
 | In `default` offering | ❌ remove both | ✅ `$rc_monthly` only |

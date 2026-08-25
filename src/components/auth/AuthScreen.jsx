@@ -2,6 +2,25 @@ import { useState } from "react";
 
 // Login / Signup / Forgot / Verify-email / Reset-password screen.
 // State + handlers are owned by App and passed in.
+// Official brand marks. Previously Apple used  (U+F8FF), a private-use glyph that only
+// renders on Apple platforms and showed as blank everywhere else, and Google used the
+// letter "G" rather than the brand mark. Both vendors require their own logo on these
+// buttons: Apple's HIG for Sign in with Apple, Google's Identity branding guidelines.
+const APPLE_MARK = (
+  <svg viewBox="0 0 24 24" width="18" height="18" fill="#fff" aria-hidden="true" focusable="false">
+    <path d="M17.05 12.536c-.025-2.57 2.098-3.804 2.193-3.863-1.194-1.746-3.052-1.986-3.71-2.012-1.58-.16-3.083.93-3.884.93-.8 0-2.036-.906-3.348-.882-1.723.025-3.31 1.001-4.196 2.543-1.789 3.1-.457 7.69 1.283 10.203.85 1.23 1.864 2.61 3.195 2.56 1.281-.05 1.766-.828 3.315-.828 1.548 0 1.985.828 3.343.803 1.38-.025 2.253-1.253 3.096-2.487.976-1.425 1.377-2.805 1.401-2.876-.03-.014-2.688-1.032-2.714-4.09zM14.5 4.86c.708-.858 1.185-2.05 1.055-3.238-1.02.041-2.254.679-2.986 1.536-.656.76-1.23 1.973-1.076 3.137 1.138.088 2.299-.578 3.007-1.435z"/>
+  </svg>
+);
+
+const GOOGLE_MARK = (
+  <svg viewBox="0 0 48 48" width="18" height="18" aria-hidden="true" focusable="false">
+    <path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>
+    <path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>
+    <path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.28-3.14.76-4.59l-7.97-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>
+    <path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>
+  </svg>
+);
+
 export default function AuthScreen({
   authScreen, setAuthScreen,
   authEmail, setAuthEmail,
@@ -24,16 +43,17 @@ export default function AuthScreen({
     const btn = (label, icon, onClick, dark) => (
       <button key={label} onClick={onClick} disabled={authLoading}
         style={{ width: "100%", background: dark ? "#000" : "#fff", color: dark ? "#fff" : "#1f1f1f",
-          border: dark ? "1px solid #333" : "none", borderRadius: 14, padding: "14px 20px", fontSize: 15,
-          fontWeight: 600, cursor: "pointer", marginBottom: 10, display: "flex", alignItems: "center",
-          justifyContent: "center", gap: 10, opacity: authLoading ? 0.7 : 1, fontFamily: "inherit" }}>
-        <span style={{ fontSize: 17, lineHeight: 1 }}>{icon}</span>{label}
+          border: dark ? "1px solid #333" : "1px solid #747775", borderRadius: 14, padding: "14px 20px",
+          fontSize: 15, fontWeight: 600, cursor: "pointer", marginBottom: 10, display: "flex",
+          alignItems: "center", justifyContent: "center", gap: 10, opacity: authLoading ? 0.7 : 1,
+          fontFamily: "inherit" }}>
+        <span style={{ display: "inline-flex", width: 18, height: 18, flexShrink: 0 }}>{icon}</span>{label}
       </button>
     );
     return (
       <div>
-        {canApple && btn(`${verb} with Apple`, "", () => handleSocialLogin('apple'), true)}
-        {canGoogle && btn(`${verb} with Google`, "G", () => handleSocialLogin('google'), false)}
+        {canApple && btn(`${verb} with Apple`, APPLE_MARK, () => handleSocialLogin('apple'), true)}
+        {canGoogle && btn(`${verb} with Google`, GOOGLE_MARK, () => handleSocialLogin('google'), false)}
         <div style={{ display: "flex", alignItems: "center", gap: 12, margin: "14px 0 16px" }}>
           <div style={{ flex: 1, height: 1, background: "#2a2a2a" }} />
           <div style={{ fontSize: 11, color: "#555", letterSpacing: "0.08em" }}>OR</div>

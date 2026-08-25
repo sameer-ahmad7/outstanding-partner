@@ -49,6 +49,11 @@ function makeNonce() {
   return Array.from(a, (b) => b.toString(16).padStart(2, '0')).join('');
 }
 
+async function sha256Hex(str) {
+  const buf = await (globalThis.crypto || window.crypto).subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf), (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 // Read the nonce claim back out of the id_token so a mismatch is diagnosable rather than
 // surfacing as an opaque Supabase error.
 function tokenNonce(idToken) {
@@ -104,14 +109,20 @@ export async function signInWithGoogle() {
     const res = await SocialLogin.login({ provider: 'google', options: { scopes: ['email', 'profile'], nonce } });
     const idToken = res?.result?.idToken || res?.idToken;
     if (!idToken) throw new Error('Google sign-in did not return an identity token.');
+    // GoogleSignIn puts SHA-256(nonce) in the token's nonce claim, and Supabase hashes whatever
+    // we hand it before comparing — so it must receive the RAW nonce, not the claim. Passing the
+    // claim through produced "Nonces mismatch" (Supabase hashed an already-hashed value).
     const claim = tokenNonce(idToken);
-    if (claim && claim !== nonce) {
-      console.warn('[socialAuth] google nonce claim differs from the one we sent; using the claim');
+    if (claim) {
+      const hashed = await sha256Hex(nonce);
+      if (claim !== hashed && claim !== nonce) {
+        console.warn('[socialAuth] google nonce claim matches neither the raw nonce nor its SHA-256');
+      }
     }
     const out = await supabase.auth.signInWithIdToken({
       provider: 'google',
       token: idToken,
-      ...(claim ? { nonce: claim === nonce ? nonce : claim } : {}),
+      ...(claim ? { nonce } : {}),
     });
     if (out.error) throw out.error;
     return out;

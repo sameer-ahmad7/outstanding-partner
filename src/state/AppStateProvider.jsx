@@ -1820,6 +1820,7 @@ export function AppStateProvider({ children, onRehydrated }) {
     setSubscribed,
     subscriptionReady,
     subscriptionPlan: subscription.plan,
+    subscriptionEntitlement: subscription.entitlement,
     subscriptionManageURL: subscription.managementURL,
     lifetimeAccess,
     setLifetimeAccess,

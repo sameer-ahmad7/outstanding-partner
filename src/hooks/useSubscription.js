@@ -11,6 +11,23 @@ function priceToNumber(s) {
   return m ? Number(m[1]) : undefined;
 }
 
+// Both SDKs expose the same entitlement fields (willRenew / periodType / expirationDate), but
+// the web SDK returns Date objects and lowercase period types while the native one returns
+// strings and uppercase. Normalize once so the UI never has to care which platform it is on.
+function normalizeEntitlement(ent) {
+  if (!ent) return null;
+  const iso = (v) => (v ? (v instanceof Date ? v.toISOString() : String(v)) : null);
+  const period = String(ent.periodType || '').toLowerCase();
+  return {
+    expiresAt: iso(ent.expirationDate),
+    willRenew: !!ent.willRenew,
+    isTrial: period === 'trial',
+    isIntro: period === 'intro',
+    store: ent.store || null,
+    unsubscribedAt: iso(ent.unsubscribeDetectedAt),
+  };
+}
+
 // Owns subscription state. Native (iOS/Android) uses RevenueCat's Capacitor SDK;
 // web uses RevenueCat Web Billing (Stripe) via purchases-js. When neither is
 // available (e.g. web without a web key), it stays inert so the dev bypass /
@@ -23,6 +40,7 @@ export function useSubscription(userId) {
   const [activeProductId, setActiveProductId] = useState(null);
   const [offering, setOffering] = useState(null);
   const [managementURL, setManagementURL] = useState(null);
+  const [entitlement, setEntitlement] = useState(null);
   const [ready, setReady] = useState(!native && !web); // ready immediately if no billing
   const [busy, setBusy] = useState(false);
 
@@ -31,6 +49,7 @@ export function useSubscription(userId) {
     setIsSubscribed(RC.isPremiumInfo(info));
     setActiveProductId(RC.activeProductId(info));
     setManagementURL(info?.managementURL || null);
+    setEntitlement(normalizeEntitlement(info?.entitlements?.active?.[RC.ENTITLEMENT_ID]));
   }, []);
 
   const refreshNative = useCallback(async () => {
@@ -56,6 +75,7 @@ export function useSubscription(userId) {
       setIsSubscribed(premium);
       setManagementURL(RCWeb.webManagementURL(info));
       setActiveProductId(RCWeb.webActiveProductId(info));
+      setEntitlement(normalizeEntitlement(info?.entitlements?.active?.[RCWeb.ENTITLEMENT_ID]));
     }
     const off = await RCWeb.getWebOffering();
     setOffering(off);
@@ -164,5 +184,5 @@ export function useSubscription(userId) {
     return { type, priceString, productId: activeProductId };
   })();
 
-  return { isSubscribed, plan, offering, ready, busy, managementURL, purchase, restore, refresh, available: native || web };
+  return { isSubscribed, plan, entitlement, offering, ready, busy, managementURL, purchase, restore, refresh, available: native || web };
 }

@@ -68,6 +68,8 @@ export default function ProfileTab() {
     isPreviewMode,
     lifetimeAccess,
     subscriptionPlan,
+    subscriptionEntitlement,
+    subscription,
     subscriptionManageURL,
     handleChangePassword,
     kidsNames,
@@ -1193,6 +1195,156 @@ export default function ProfileTab() {
                   </div>
                 </div>
     
+                {/* Premium card. Locks scattered through the app tell you what you can't reach;
+                    this is the one place that says what Premium actually IS and lets you buy it. */}
+                {!lifetimeAccess && (() => {
+                  const pkgs = (subscription?.offering?.availablePackages) || [];
+                  const m = pkgs.find(p => p.packageType === 'MONTHLY') || pkgs[0];
+                  const price = m?.product?.priceString;
+                  const ip = m?.product?.introPrice;
+                  const freeUnit = ip && Number(ip.price) === 0 && ip.periodUnit
+                    ? String(ip.periodUnit).toLowerCase().replace(/s$/, '')
+                    : null;
+                  const perks = [
+                    ["🌙", "Her full cycle playbook", "What she needs and what to avoid, every phase"],
+                    ["🔮", "Cycle forecast", "See her toughest week days before it arrives"],
+                    ["💬", "The whole text library", "Every phase-matched message, not one a day"],
+                    ["🎲", "All activities & date ideas", "60 at-home activities, 100 date ideas"],
+                    ["📈", "Streaks, history & Game Plan", "Your progress saved and the long game mapped"],
+                    ["🔔", "Phase-change reminders", "A heads-up before her needs shift"],
+                  ];
+                  const fmtDate = (iso) => {
+                    if (!iso) return null;
+                    try {
+                      return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+                    } catch (e) { return null; }
+                  };
+
+                  // ---- Active subscriber: show what they have, when it renews, and how to manage it.
+                  if (isPremium) {
+                    const ent = subscriptionEntitlement;
+                    const renews = fmtDate(ent?.expiresAt);
+                    const planLabel = subscriptionPlan?.type === 'annual' ? 'Yearly'
+                      : subscriptionPlan?.type === 'monthly' ? 'Monthly' : 'Premium';
+                    const planPrice = subscriptionPlan?.priceString;
+                    const cancelled = ent && ent.willRenew === false;
+                    return (
+                      <div style={{
+                        marginBottom: 20,
+                        background: "linear-gradient(135deg,#0a1a0a,#0f0f0f)",
+                        border: "1px solid #27ae6050",
+                        borderRadius: 16,
+                        padding: 18
+                      }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                          <span style={{ fontSize: 18 }}>👑</span>
+                          <div style={{ fontSize: 12, color: "#27ae60", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em" }}>
+                            {ent?.isTrial ? "Free trial" : "Premium — active"}
+                          </div>
+                        </div>
+                        <div style={{ fontSize: 16, fontWeight: 700, color: "#f0ece4", fontFamily: "'Playfair Display',serif", marginBottom: 12 }}>
+                          {ent?.isTrial ? "You're on your free trial." : "You have everything unlocked."}
+                        </div>
+
+                        <div style={{ background: "#00000040", borderRadius: 12, padding: "12px 14px", marginBottom: 12 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 7 }}>
+                            <span style={{ fontSize: 12, color: "#8a8a8a" }}>Plan</span>
+                            <span style={{ fontSize: 12, color: "#f0ece4", fontWeight: 700 }}>
+                              {planLabel}{planPrice ? ` · ${planPrice}` : ""}
+                            </span>
+                          </div>
+                          {renews && (
+                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 7 }}>
+                              <span style={{ fontSize: 12, color: "#8a8a8a" }}>
+                                {cancelled ? "Access ends" : ent?.isTrial ? "First charge" : "Renews"}
+                              </span>
+                              <span style={{ fontSize: 12, color: cancelled ? "#e67e22" : "#f0ece4", fontWeight: 700 }}>{renews}</span>
+                            </div>
+                          )}
+                          {ent?.store && (
+                            <div style={{ display: "flex", justifyContent: "space-between" }}>
+                              <span style={{ fontSize: 12, color: "#8a8a8a" }}>Billed through</span>
+                              <span style={{ fontSize: 12, color: "#f0ece4", fontWeight: 700, textTransform: "capitalize" }}>
+                                {String(ent.store).replace(/_/g, " ").toLowerCase()}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        {ent?.isTrial && renews && !cancelled && (
+                          <div style={{ fontSize: 11.5, color: "#8a8a8a", lineHeight: 1.5, marginBottom: 10 }}>
+                            You won't be charged until {renews}. Cancel any time before then and you won't pay anything.
+                          </div>
+                        )}
+                        {cancelled && (
+                          <div style={{ fontSize: 11.5, color: "#e67e22", lineHeight: 1.5, marginBottom: 10 }}>
+                            Auto-renew is off. You keep full access until {renews || "the end of the period"}.
+                          </div>
+                        )}
+
+                        {subscriptionManageURL && (
+                          <button onClick={() => openExternal(subscriptionManageURL)} style={{
+                            width: "100%",
+                            background: "transparent",
+                            border: "1px solid #333",
+                            borderRadius: 10,
+                            padding: "11px 14px",
+                            fontSize: 13,
+                            color: "#aaa",
+                            cursor: "pointer"
+                          }}>Manage subscription</button>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div style={{
+                      marginBottom: 20,
+                      background: "linear-gradient(135deg,#1a0a1a,#0f0f0f)",
+                      border: "1px solid #8e44ad50",
+                      borderRadius: 16,
+                      padding: 18
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                        <span style={{ fontSize: 18 }}>👑</span>
+                        <div style={{ fontSize: 12, color: "#8e44ad", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em" }}>Premium</div>
+                      </div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: "#f0ece4", fontFamily: "'Playfair Display',serif", marginBottom: 14 }}>
+                        Stop guessing what she needs.
+                      </div>
+                      {perks.map(([icon, title, body]) => (
+                        <div key={title} style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 11 }}>
+                          <span style={{ fontSize: 14, lineHeight: "18px" }}>{icon}</span>
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: "#f0ece4", lineHeight: 1.3 }}>{title}</div>
+                            <div style={{ fontSize: 11.5, color: "#8a8a8a", lineHeight: 1.5, marginTop: 1 }}>{body}</div>
+                          </div>
+                        </div>
+                      ))}
+                      <button onClick={requirePremium} style={{
+                        width: "100%",
+                        background: "linear-gradient(135deg,#c0392b,#8e44ad)",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: 12,
+                        padding: "14px 16px",
+                        fontSize: 14,
+                        fontWeight: 800,
+                        cursor: "pointer",
+                        marginTop: 4
+                      }}>
+                        {freeUnit ? `Start My Free ${freeUnit.charAt(0).toUpperCase() + freeUnit.slice(1)}` : "Upgrade to Premium"}
+                      </button>
+                      <div style={{ fontSize: 11, color: "#8a8a8a", textAlign: "center", marginTop: 8, lineHeight: 1.5 }}>
+                        {price
+                          ? (freeUnit ? `Then ${price}/month · cancel anytime` : `${price}/month · cancel anytime`)
+                          : "Cancel anytime"}
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 {/* Signed out — the way back in. Without the old auth wall, Sign Out otherwise
                     left the user with no route to an account. */}
                 {!hasAccount && <div style={{
@@ -1286,19 +1438,6 @@ export default function ProfileTab() {
                       ? "✓ Outstanding Partner — Premium"
                       : "Free plan"}
                       </div>
-                      {!lifetimeAccess && subscriptionManageURL && (
-                        <button onClick={() => openExternal(subscriptionManageURL)} style={{
-                          marginTop: 8,
-                          background: "transparent",
-                          border: "none",
-                          color: "#8e44ad",
-                          fontSize: 12,
-                          fontWeight: 600,
-                          cursor: "pointer",
-                          padding: 0,
-                          textDecoration: "underline"
-                        }}>Manage subscription</button>
-                      )}
                     </div>
                     <button onClick={async () => {
               try {

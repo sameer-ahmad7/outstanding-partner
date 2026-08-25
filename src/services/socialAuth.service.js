@@ -37,6 +37,28 @@ async function initSocial() {
   return initPromise;
 }
 
+// GoogleSignIn 9.x puts a `nonce` claim in the id_token whether or not we asked for one, and
+// Supabase rejects a token whose nonce it can't correlate:
+//   "Passed nonce and nonce in id_token should either both exist or not."
+// So we generate the nonce ourselves, hand it to the SDK, and pass the same value to Supabase.
+// That keeps the replay protection the nonce exists for — the alternative, Supabase's
+// "Skip nonce checks", disables the check for every client.
+function makeNonce() {
+  const a = new Uint8Array(32);
+  (globalThis.crypto || window.crypto).getRandomValues(a);
+  return Array.from(a, (b) => b.toString(16).padStart(2, '0')).join('');
+}
+
+// Read the nonce claim back out of the id_token so a mismatch is diagnosable rather than
+// surfacing as an opaque Supabase error.
+function tokenNonce(idToken) {
+  try {
+    const p = String(idToken).split('.')[1];
+    const json = atob(p.replace(/-/g, '+').replace(/_/g, '/'));
+    return JSON.parse(json).nonce || null;
+  } catch (e) { return null; }
+}
+
 export function socialAuthAvailable(provider) {
   if (!isNative()) return true; // web always has the OAuth redirect path
   if (provider === 'apple') return Capacitor.getPlatform() === 'ios' && !!import.meta.env.VITE_APPLE_SERVICES_ID;
@@ -78,10 +100,19 @@ export async function signInWithApple() {
 export async function signInWithGoogle() {
   if (isNative()) {
     const SocialLogin = await initSocial();
-    const res = await SocialLogin.login({ provider: 'google', options: { scopes: ['email', 'profile'] } });
+    const nonce = makeNonce();
+    const res = await SocialLogin.login({ provider: 'google', options: { scopes: ['email', 'profile'], nonce } });
     const idToken = res?.result?.idToken || res?.idToken;
     if (!idToken) throw new Error('Google sign-in did not return an identity token.');
-    const out = await supabase.auth.signInWithIdToken({ provider: 'google', token: idToken });
+    const claim = tokenNonce(idToken);
+    if (claim && claim !== nonce) {
+      console.warn('[socialAuth] google nonce claim differs from the one we sent; using the claim');
+    }
+    const out = await supabase.auth.signInWithIdToken({
+      provider: 'google',
+      token: idToken,
+      ...(claim ? { nonce: claim === nonce ? nonce : claim } : {}),
+    });
     if (out.error) throw out.error;
     return out;
   }
@@ -128,6 +159,10 @@ export function socialAuthErrorMessage(e, provider) {
   // to be recognisable in a bug report.
   if (/audience|invalid_client|invalid client|not enabled|unsupported provider/i.test(hay)) {
     return `${name} sign-in isn’t available right now. Please try another way to sign in.`;
+  }
+  if (/nonce/i.test(hay)) {
+    console.warn('[socialAuth] nonce rejected by Supabase:', raw);
+    return `Couldn’t verify the ${name} sign-in. Please try again.`;
   }
   if (/already registered|already exists|identity.*linked/i.test(hay)) {
     return 'That account is already linked to a different sign-in method. Try signing in with the other method.';

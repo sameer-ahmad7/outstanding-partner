@@ -1229,10 +1229,18 @@ export default function ProfileTab() {
                     const daysLeft = ent?.expiresAt
                       ? Math.max(0, Math.ceil((new Date(ent.expiresAt) - Date.now()) / 86400000))
                       : null;
+                    // Express long spans in months. A one-month trial bought on 25 August ends on
+                    // 25 September, which is 31 days — arithmetically right but it reads as a
+                    // contradiction next to an offer that promised "1 month free".
                     const remaining = daysLeft == null ? null
                       : daysLeft === 0 ? "Ends today"
                       : daysLeft === 1 ? "1 day left"
-                      : `${daysLeft} days left`;
+                      : daysLeft < 30 ? `${daysLeft} days left`
+                      : (() => {
+                          const months = Math.round(daysLeft / 30.44);
+                          if (months >= 12) return "About 1 year left";
+                          return months <= 1 ? "About 1 month left" : `About ${months} months left`;
+                        })();
                     // Cancelling happens wherever the money is taken, and each store has a
                     // different route. Telling someone "cancel in Settings" when they paid by
                     // card on the web is worse than saying nothing.

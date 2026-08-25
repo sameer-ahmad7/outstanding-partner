@@ -133,12 +133,35 @@ select that project) so everything stays in one place.
 | Field | Value |
 |---|---|
 | Client IDs | `com.outstandingpartner.app.web,com.outstandingpartner.app` |
-| Secret Key | contents of the `.p8` |
+| Secret Key | a **signed JWT**, not the `.p8` — run `scripts/apple-client-secret.sh ~/Downloads/AuthKey_XXXXXXXXXX.p8` |
 | Team ID | from 1.4 |
 | Key ID | from 1.3 |
 
 > ⚠️ Put **both** IDs in Client IDs, comma-separated, no space. Web tokens carry the Services ID;
 > native iOS tokens carry the Bundle ID. Miss the second and native sign-in fails validation.
+
+> ⚠️ **Secret Key is NOT the `.p8`.** Pasting the key file gives *"Secret key should be a JWT."*
+> Supabase wants an **ES256-signed JWT** derived from the `.p8` (`iss`=Team ID, `kid`=Key ID,
+> `sub`=Services ID, `aud`=`https://appleid.apple.com`). That is why the dashboard warns the
+> secret expires every 6 months — `.p8` files never expire, the JWT does.
+>
+> ```bash
+> scripts/apple-client-secret.sh ~/Downloads/AuthKey_RN9B664PHQ.p8
+> ```
+>
+> Verify it before pasting — a good secret returns `invalid_grant` (Apple rejecting the fake
+> code), a bad one returns `invalid_client`:
+>
+> ```bash
+> curl -s -X POST https://appleid.apple.com/auth/token \
+>   -d "client_id=com.outstandingpartner.app.web" \
+>   --data-urlencode "client_secret=$JWT" \
+>   -d "grant_type=authorization_code" -d "code=x" \
+>   -d "redirect_uri=https://avnqmwuvzdkkfnovaibl.supabase.co/auth/v1/callback"
+> ```
+>
+> ⏰ **Current secret expires 24 February 2027** — regenerate and re-paste before then or web
+> Apple sign-in breaks. Native (`signInWithIdToken`) is unaffected; only the web OAuth flow uses it.
 
 ### 3.2 Enable Google
 **Authentication → Providers → Google → Enable**

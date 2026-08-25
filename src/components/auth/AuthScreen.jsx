@@ -121,10 +121,10 @@ export default function AuthScreen({
 
           <input value={authEmail} onChange={e => setAuthEmail(e.target.value)} placeholder="Email address" type="email" style={{ width: "100%", background: "#1a1a1a", border: "1px solid #333", color: "#f0ece4", borderRadius: 12, padding: "14px 16px", fontSize: 15, boxSizing: "border-box", fontFamily: "inherit", marginBottom: 10 }} />
           <input value={authPassword} onChange={e => setAuthPassword(e.target.value)} placeholder="Create a password (min 8 characters)" type="password" style={{ width: "100%", background: "#1a1a1a", border: "1px solid #333", color: "#f0ece4", borderRadius: 12, padding: "14px 16px", fontSize: 15, boxSizing: "border-box", fontFamily: "inherit", marginBottom: 6 }} />
-          <div style={{ fontSize: 11, color: "#555", marginBottom: 16, lineHeight: 1.5 }}>By signing up you agree to our Terms of Service and Privacy Policy. You can cancel anytime from your account settings.</div>
+          <div style={{ fontSize: 11, color: "#555", marginBottom: 16, lineHeight: 1.5 }}>By signing up you agree to our Terms of Service and Privacy Policy.</div>
           {authError && <div style={{ color: "#e74c3c", fontSize: 13, marginBottom: 12, padding: "10px 12px", background: "#1a0a0a", borderRadius: 8 }}>{authError}</div>}
           <button onClick={handleSignup} disabled={authLoading} style={{ width: "100%", background: "#c0392b", color: "#fff", border: "none", borderRadius: 14, padding: "16px 20px", fontSize: 15, fontWeight: 700, cursor: "pointer", marginBottom: 12, opacity: authLoading ? 0.7 : 1 }}>
-            {authLoading ? "Creating account..." : "Start Free Trial →"}
+            {authLoading ? "Creating account..." : "Create Free Account →"}
           </button>
           <div style={{ textAlign: "center", fontSize: 13, color: "#555" }}>
             Already have an account?{" "}

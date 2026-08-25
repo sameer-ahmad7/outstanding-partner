@@ -1224,6 +1224,47 @@ export default function ProfileTab() {
                   if (isPremium) {
                     const ent = subscriptionEntitlement;
                     const renews = fmtDate(ent?.expiresAt);
+                    const started = fmtDate(ent?.startedAt);
+                    // Whole days remaining, rounded up, so "1 day left" means it ends tomorrow.
+                    const daysLeft = ent?.expiresAt
+                      ? Math.max(0, Math.ceil((new Date(ent.expiresAt) - Date.now()) / 86400000))
+                      : null;
+                    const remaining = daysLeft == null ? null
+                      : daysLeft === 0 ? "Ends today"
+                      : daysLeft === 1 ? "1 day left"
+                      : `${daysLeft} days left`;
+                    // Cancelling happens wherever the money is taken, and each store has a
+                    // different route. Telling someone "cancel in Settings" when they paid by
+                    // card on the web is worse than saying nothing.
+                    const store = ent?.store || null;
+                    const cancelInfo = (() => {
+                      if (store === 'app_store' || store === 'mac_app_store') return {
+                        label: 'Apple',
+                        how: 'Open the Settings app → tap your name → Subscriptions → Outstanding Partner → Cancel Subscription.',
+                        cta: 'Open subscription settings',
+                      };
+                      if (store === 'play_store') return {
+                        label: 'Google Play',
+                        how: 'Open the Play Store → tap your profile → Payments & subscriptions → Subscriptions → Outstanding Partner → Cancel.',
+                        cta: 'Open Play subscriptions',
+                      };
+                      if (store === 'stripe' || store === 'rc_billing') return {
+                        label: 'card',
+                        how: 'Manage your payment details or cancel any time in the billing portal. Cancelling keeps your access until the end of the period you have paid for.',
+                        cta: 'Open billing portal',
+                      };
+                      if (store === 'promotional') return {
+                        label: null,
+                        how: 'This access was granted directly, so there is nothing to cancel and you will not be charged.',
+                        cta: null,
+                      };
+                      if (store === 'amazon') return {
+                        label: 'Amazon',
+                        how: 'Manage this subscription from your Amazon Appstore account.',
+                        cta: 'Manage subscription',
+                      };
+                      return { label: null, how: null, cta: 'Manage subscription' };
+                    })();
                     const planLabel = subscriptionPlan?.type === 'annual' ? 'Yearly'
                       : subscriptionPlan?.type === 'monthly' ? 'Monthly' : 'Premium';
                     const planPrice = subscriptionPlan?.priceString;
@@ -1261,11 +1302,30 @@ export default function ProfileTab() {
                               <span style={{ fontSize: 12, color: cancelled ? "#e67e22" : "#f0ece4", fontWeight: 700 }}>{renews}</span>
                             </div>
                           )}
+                          {started && renews && (
+                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 7 }}>
+                              <span style={{ fontSize: 12, color: "#8a8a8a" }}>
+                                {ent?.isTrial ? "Trial period" : "Current period"}
+                              </span>
+                              <span style={{ fontSize: 12, color: "#f0ece4", fontWeight: 700 }}>{started} – {renews}</span>
+                            </div>
+                          )}
+                          {remaining && (
+                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 7 }}>
+                              <span style={{ fontSize: 12, color: "#8a8a8a" }}>
+                                {ent?.isTrial ? "Trial remaining" : cancelled ? "Access remaining" : "Renews in"}
+                              </span>
+                              <span style={{ fontSize: 12, color: daysLeft <= 3 ? "#e67e22" : "#f0ece4", fontWeight: 700 }}>{remaining}</span>
+                            </div>
+                          )}
                           {ent?.store && (
                             <div style={{ display: "flex", justifyContent: "space-between" }}>
                               <span style={{ fontSize: 12, color: "#8a8a8a" }}>Billed through</span>
-                              <span style={{ fontSize: 12, color: "#f0ece4", fontWeight: 700, textTransform: "capitalize" }}>
-                                {String(ent.store).replace(/_/g, " ").toLowerCase()}
+                              <span style={{ fontSize: 12, color: "#f0ece4", fontWeight: 700 }}>
+                                {store === 'app_store' || store === 'mac_app_store' ? 'Apple'
+                                  : store === 'play_store' ? 'Google Play'
+                                  : store === 'stripe' || store === 'rc_billing' ? 'Card'
+                                  : String(ent.store).replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
                               </span>
                             </div>
                           )}
@@ -1282,7 +1342,16 @@ export default function ProfileTab() {
                           </div>
                         )}
 
-                        {subscriptionManageURL && (
+                        {cancelInfo.how && (
+                          <div style={{ background: "#00000030", borderRadius: 10, padding: "11px 13px", marginBottom: 10 }}>
+                            <div style={{ fontSize: 11, color: "#8a8a8a", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 5 }}>
+                              How to cancel
+                            </div>
+                            <div style={{ fontSize: 11.5, color: "#aaa", lineHeight: 1.6 }}>{cancelInfo.how}</div>
+                          </div>
+                        )}
+
+                        {cancelInfo.cta && subscriptionManageURL && (
                           <button onClick={() => openExternal(subscriptionManageURL)} style={{
                             width: "100%",
                             background: "transparent",
@@ -1292,7 +1361,7 @@ export default function ProfileTab() {
                             fontSize: 13,
                             color: "#aaa",
                             cursor: "pointer"
-                          }}>Manage subscription</button>
+                          }}>{cancelInfo.cta}</button>
                         )}
                       </div>
                     );

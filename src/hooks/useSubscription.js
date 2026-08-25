@@ -20,10 +20,12 @@ function normalizeEntitlement(ent) {
   const period = String(ent.periodType || '').toLowerCase();
   return {
     expiresAt: iso(ent.expirationDate),
+    startedAt: iso(ent.latestPurchaseDate),
     willRenew: !!ent.willRenew,
     isTrial: period === 'trial',
     isIntro: period === 'intro',
-    store: ent.store || null,
+    // Native reports APP_STORE / PLAY_STORE, web reports app_store / play_store.
+    store: ent.store ? String(ent.store).toLowerCase() : null,
     unsubscribedAt: iso(ent.unsubscribeDetectedAt),
   };
 }

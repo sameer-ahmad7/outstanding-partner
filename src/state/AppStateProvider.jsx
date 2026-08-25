@@ -402,6 +402,11 @@ export function AppStateProvider({ children, onRehydrated }) {
   // Subscription-only app: an active subscription unlocks everything (no free tier).
   const isPremium = subscribed || isPreviewMode;
 
+
+  // Email verification hard gate: dev bypass / screenshot mode skip it; otherwise the
+  // signed-in user must have a confirmed email before reaching the paywall.
+  const emailVerified = isPreviewMode || SCREENSHOT || !!authUser?.emailConfirmed;
+
   // ---- Access tiers (WS3 freemium) --------------------------------------------------
   // Three tiers, per FEATURE_TIERING_FINAL.md:
   //   'anon'    — no account. Today's mission, 1 text/day, a few date ideas, read-only phase info.
@@ -437,10 +442,6 @@ export function AppStateProvider({ children, onRehydrated }) {
     setPaywallOpen(true);
     return false;
   }, [isPremium, hasAccount]);
-
-  // Email verification hard gate: dev bypass / screenshot mode skip it; otherwise the
-  // signed-in user must have a confirmed email before reaching the paywall.
-  const emailVerified = isPreviewMode || SCREENSHOT || !!authUser?.emailConfirmed;
 
   // RevenueCat entitlement state (native). Drives the hard paywall + access.
   

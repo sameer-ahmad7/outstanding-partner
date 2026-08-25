@@ -24,7 +24,7 @@
     "_developerTeamID" : "MHWR5UKD73",
     "_disableDialogs" : false,
     "_failTransactionsEnabled" : false,
-    "_lastSynchronizedDate" : 802795029.36370897,
+    "_lastSynchronizedDate" : 809353445.03882205,
     "_locale" : "en_US",
     "_renewalBillingIssuesEnabled" : false,
     "_storefront" : "USA",
@@ -53,7 +53,7 @@
           "groupNumber" : 1,
           "internalID" : "6778460668",
           "introductoryOffer" : {
-            "internalID" : "4BF0C06E",
+            "internalID" : "1463165F",
             "numberOfPeriods" : 1,
             "paymentMode" : "free",
             "subscriptionPeriod" : "P1W"
@@ -81,12 +81,45 @@
           "codeOffers" : [
 
           ],
+          "displayPrice" : "8.99",
+          "familyShareable" : false,
+          "groupNumber" : 3,
+          "internalID" : "6804608022",
+          "introductoryOffer" : {
+            "internalID" : "9D0EE8E8",
+            "numberOfPeriods" : 1,
+            "paymentMode" : "free",
+            "subscriptionPeriod" : "P1M"
+          },
+          "localizations" : [
+            {
+              "description" : "Full cycle playbook, unlimited texts, activities",
+              "displayName" : "Premium",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "com.outstandingpartner.app.monthly899",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Premium Monthly 8.99",
+          "subscriptionGroupID" : "22145488",
+          "type" : "RecurringSubscription",
+          "winbackOffers" : [
+
+          ]
+        },
+        {
+          "adHocOffers" : [
+
+          ],
+          "codeOffers" : [
+
+          ],
           "displayPrice" : "224.99",
           "familyShareable" : false,
           "groupNumber" : 2,
           "internalID" : "6778466584",
           "introductoryOffer" : {
-            "internalID" : "503D7574",
+            "internalID" : "598FD33D",
             "numberOfPeriods" : 1,
             "paymentMode" : "free",
             "subscriptionPeriod" : "P1W"

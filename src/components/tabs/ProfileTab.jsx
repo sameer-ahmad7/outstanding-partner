@@ -1193,6 +1193,53 @@ export default function ProfileTab() {
                   </div>
                 </div>
     
+                {/* Signed out — the way back in. Without the old auth wall, Sign Out otherwise
+                    left the user with no route to an account. */}
+                {!hasAccount && <div style={{
+          marginBottom: 20,
+          background: "#1a1a1a",
+          border: "1px solid #2a2a2a",
+          borderRadius: 14,
+          padding: 16
+        }}>
+                    <div style={{
+            fontSize: 12,
+            color: "#666",
+            fontWeight: 700,
+            textTransform: "uppercase",
+            letterSpacing: "0.1em",
+            marginBottom: 8
+          }}>Your Account</div>
+                    <div style={{
+            fontSize: 13,
+            color: "#888",
+            lineHeight: 1.6,
+            marginBottom: 12
+          }}>You're not signed in. Create a free account to save your progress, streak and notes — and to keep them if you change device.</div>
+                    <button onClick={() => requireAccount('login')} style={{
+            width: "100%",
+            background: "#c0392b",
+            color: "#fff",
+            border: "none",
+            borderRadius: 10,
+            padding: "12px 14px",
+            fontSize: 14,
+            fontWeight: 700,
+            cursor: "pointer",
+            marginBottom: 8
+          }}>Sign In</button>
+                    <button onClick={() => requireAccount('signup')} style={{
+            width: "100%",
+            background: "transparent",
+            border: "1px solid #333",
+            borderRadius: 10,
+            padding: "11px 14px",
+            fontSize: 13,
+            color: "#aaa",
+            cursor: "pointer"
+          }}>Create a free account</button>
+                  </div>}
+
                 {/* Account Info */}
                 {authUser && <div style={{
           marginBottom: 20,
@@ -1486,8 +1533,9 @@ export default function ProfileTab() {
                   </div>
                 </div>
     
-                {/* Danger zone - Delete account */}
-                <div style={{
+                {/* Danger zone - Delete account. Requires a session: signed out there is no
+                    account to delete, and the call would fail anyway. */}
+                {authUser && <div style={{
           marginBottom: 20,
           background: "#1a0a0a",
           border: "1px solid #e74c3c20",
@@ -1563,7 +1611,7 @@ export default function ProfileTab() {
                         </button>
                       </div>
                     </div>}
-                </div>
+                </div>}
               </div>}
     
             {/* CYCLE CALENDAR TAB */}

@@ -98,6 +98,29 @@ select that project) so everything stays in one place.
 2. Name `Outstanding Partner iOS`, **Bundle ID:** `com.outstandingpartner.app`
 3. **Create** → copy the **Client ID** (looks like `…apps.googleusercontent.com`)
 
+> ⚠️ **The iOS client ID also has to be registered as a URL scheme, or the app hard-crashes.**
+> `GIDSignIn` asserts the *reversed* client id is in `CFBundleURLTypes` and raises
+> `NSInvalidArgumentException: Your app is missing support for the following URL schemes: …`
+> — an uncaught ObjC exception, so it terminates the app rather than failing the sign-in.
+>
+> Reverse the client id (drop `.apps.googleusercontent.com`, prefix
+> `com.googleusercontent.apps.`) and add it to `ios/App/App/Info.plist`:
+>
+> ```xml
+> <dict>
+>   <key>CFBundleURLName</key>
+>   <string>com.googleusercontent.apps.713838169814-adtnvlefp0602bklhqu92lh1d6uhn0t4</string>
+>   <key>CFBundleURLSchemes</key>
+>   <array>
+>     <string>com.googleusercontent.apps.713838169814-adtnvlefp0602bklhqu92lh1d6uhn0t4</string>
+>   </array>
+> </dict>
+> ```
+>
+> `npx cap sync` does **not** touch Info.plist, so this edit persists. It must stay in sync with
+> `VITE_GOOGLE_IOS_CLIENT_ID`. No AppDelegate change is needed — GoogleSignIn 9.x returns via
+> `ASWebAuthenticationSession`, so the scheme is only the SDK's startup assertion.
+
 ### 2.4 Android client ID — ⚠️ needs TWO fingerprints
 1. **Create Credentials → OAuth client ID → Android**
 2. Name `Outstanding Partner Android`, **Package name:** `com.outstandingpartner.app`

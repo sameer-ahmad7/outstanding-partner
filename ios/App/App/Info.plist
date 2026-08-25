@@ -65,6 +65,17 @@
 				<string>fb1619043059848775</string>
 			</array>
 		</dict>
+		<!-- Google Sign-In: the REVERSED iOS client id. GIDSignIn asserts this scheme is
+		     registered and raises NSInvalidArgumentException at login if it is missing.
+		     Must stay in sync with VITE_GOOGLE_IOS_CLIENT_ID in .env. -->
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.googleusercontent.apps.713838169814-adtnvlefp0602bklhqu92lh1d6uhn0t4</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.713838169814-adtnvlefp0602bklhqu92lh1d6uhn0t4</string>
+			</array>
+		</dict>
 	</array>
 	<!-- Meta / Facebook App Events -->
 	<key>FacebookAppID</key>

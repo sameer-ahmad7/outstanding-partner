@@ -105,18 +105,30 @@ export async function signInWithApple() {
 export async function signInWithGoogle() {
   if (isNative()) {
     const SocialLogin = await initSocial();
+    // Drop any cached Google session before starting, so the SDK can't short-circuit to a
+    // stale token. Safe to call when not signed in.
+    try { await SocialLogin.logout({ provider: 'google' }); } catch (e) { /* not signed in */ }
     const nonce = makeNonce();
-    const res = await SocialLogin.login({ provider: 'google', options: { scopes: ['email', 'profile'], nonce } });
+    // forcePrompt is required, not cosmetic. Without it the plugin takes its
+    // restorePreviousSignIn() branch whenever hasPreviousSignIn() is true, which returns a
+    // CACHED id_token minted in an earlier session — carrying a nonce we never generated, and
+    // silently ignoring the one we just passed. Supabase then rejects it as "Nonces mismatch".
+    // Only the fresh signIn() path honours our nonce.
+    const res = await SocialLogin.login({
+      provider: 'google',
+      options: { scopes: ['email', 'profile'], nonce, forcePrompt: true },
+    });
     const idToken = res?.result?.idToken || res?.idToken;
     if (!idToken) throw new Error('Google sign-in did not return an identity token.');
-    // GoogleSignIn puts SHA-256(nonce) in the token's nonce claim, and Supabase hashes whatever
-    // we hand it before comparing — so it must receive the RAW nonce, not the claim. Passing the
-    // claim through produced "Nonces mismatch" (Supabase hashed an already-hashed value).
+    // Always send the RAW nonce: Supabase compares the token's nonce claim against both the
+    // value given here and its SHA-256, so raw is correct whichever convention the provider
+    // used. Never send the claim back — that only ever matches itself by accident.
     const claim = tokenNonce(idToken);
     if (claim) {
       const hashed = await sha256Hex(nonce);
       if (claim !== hashed && claim !== nonce) {
-        console.warn('[socialAuth] google nonce claim matches neither the raw nonce nor its SHA-256');
+        // Means the SDK ignored our nonce — historically the cached-token path above.
+        console.warn('[socialAuth] google nonce claim is not ours; token may be cached');
       }
     }
     const out = await supabase.auth.signInWithIdToken({

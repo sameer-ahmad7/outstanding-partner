@@ -98,3 +98,40 @@ export async function socialSignOut() {
     await SocialLogin.logout({ provider: 'google' });
   } catch (e) { /* not signed in with google */ }
 }
+
+// Turn a provider error into something a person can act on, or null when the user simply
+// backed out. Returns null => show nothing at all.
+//
+// The native SDK errors are not user-facing text: @capgo/capacitor-social-login passes Apple's
+// raw NSError straight through, so a cancelled sheet surfaced as
+//   "The operation couldn't be completed. (com.apple.AuthenticationServices.AuthorizationError error 1000.)"
+// ASAuthorizationError: 1000 unknown · 1001 canceled · 1002 invalidResponse · 1003 notHandled
+//   · 1004 failed · 1005 notInteractive.        GIDSignInError: -5 canceled.
+// 1000 is treated as a cancel because that is what the sheet reports when it is dismissed;
+// a genuine presentation failure lands here too, so we keep a console warning for debugging
+// rather than swallowing it entirely.
+export function socialAuthErrorMessage(e, provider) {
+  const name = provider === 'apple' ? 'Apple' : 'Google';
+  const raw = (e && (e.message || e.error_description || e.error)) || '';
+  const code = (e && (e.code ?? e.errorCode)) ?? '';
+  const hay = `${raw} ${code}`;
+
+  // Cancelled / dismissed — not an error.
+  if (/cancel|abort|closed|dismiss|user.?denied|popup_closed/i.test(hay)) return null;
+  if (/AuthorizationError error (1000|1001)/.test(raw)) { console.warn('[socialAuth] dismissed or unavailable:', raw); return null; }
+  if (String(code) === '1000' || String(code) === '1001' || String(code) === '-5') return null;
+
+  if (/network|offline|internet|timed? ?out/i.test(hay)) {
+    return 'You appear to be offline. Check your connection and try again.';
+  }
+  // Misconfiguration — the audience/client checks. Deliberately not raw, but distinct enough
+  // to be recognisable in a bug report.
+  if (/audience|invalid_client|invalid client|not enabled|unsupported provider/i.test(hay)) {
+    return `${name} sign-in isn’t available right now. Please try another way to sign in.`;
+  }
+  if (/already registered|already exists|identity.*linked/i.test(hay)) {
+    return 'That account is already linked to a different sign-in method. Try signing in with the other method.';
+  }
+  console.warn('[socialAuth] unmapped error:', raw || e);
+  return `Couldn’t sign in with ${name}. Please try again.`;
+}

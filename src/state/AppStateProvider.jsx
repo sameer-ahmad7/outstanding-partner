@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback, createContext, useContext } from "react";
 import { hasSupabase } from '../services/supabaseClient.js';
 import { signIn, signUp, signOutUser, sendPasswordReset, getSession, onAuthChange, toAuthUser, verifyEmailOtp, updatePassword, resendVerification } from '../services/auth.service.js';
-import { signInWithApple, signInWithGoogle, socialAuthAvailable } from '../services/socialAuth.service.js';
+import { signInWithApple, signInWithGoogle, socialAuthAvailable, socialAuthErrorMessage } from '../services/socialAuth.service.js';
 import { useCloudSync } from '../hooks/useCloudSync.js';
 import { deleteAccount } from '../services/account.service.js';
 import { getUserSubscription } from '../services/appData.service.js';
@@ -1231,11 +1231,11 @@ export function AppStateProvider({ children, onRehydrated }) {
       else await signInWithGoogle();
       // On web this redirects away; on native the session is live by now.
     } catch (e) {
-      const msg = (e && (e.message || e.error_description)) || '';
-      // User backing out of the native sheet is not an error worth showing.
-      if (!/cancel|abort|closed|dismiss|1001/i.test(msg)) {
-        setAuthError((e && e.message) || 'Could not sign in. Please try again.');
-      }
+      // socialAuthErrorMessage returns null when the user simply dismissed the sheet, and a
+      // human-readable string otherwise. The raw provider error is never shown: Apple's
+      // NSError reads "AuthorizationError error 1000", which told the user nothing.
+      const msg = socialAuthErrorMessage(e, provider);
+      if (msg) setAuthError(msg);
     } finally {
       setAuthLoading(false);
     }

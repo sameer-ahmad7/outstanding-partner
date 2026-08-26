@@ -132,9 +132,18 @@ export async function signInWithGoogle() {
     // forcePrompt is required, not cosmetic. Without it the plugin takes its
     // restorePreviousSignIn() branch whenever hasPreviousSignIn() is true, which returns a
     // CACHED id_token carrying a nonce we never generated, silently ignoring ours.
+    // `scopes` is iOS-only here. The Android provider already requests email/profile/openid by
+    // default and REJECTS any explicit scopes array unless MainActivity extends the plugin's
+    // ModifiedMainActivityForSocialLoginPlugin ("You CANNOT use scopes without modifying the
+    // main activity"). We only ever want the defaults, so we simply don't ask on Android.
+    // nonce and forcePrompt are supported on both platforms.
     const res = await SocialLogin.login({
       provider: 'google',
-      options: { scopes: ['email', 'profile'], nonce: hashedNonce, forcePrompt: true },
+      options: {
+        ...(Capacitor.getPlatform() === 'ios' ? { scopes: ['email', 'profile'] } : {}),
+        nonce: hashedNonce,
+        forcePrompt: true,
+      },
     });
     const idToken = res?.result?.idToken || res?.idToken;
     if (!idToken) throw new Error('Google sign-in did not return an identity token.');

@@ -6,7 +6,8 @@
     "androidScheme": "https"
   },
   "ios": {
-    "contentInset": "always"
+    "contentInset": "never",
+    "backgroundColor": "#0d0d0d"
   },
   "plugins": {
     "Keyboard": {
@@ -19,5 +20,6 @@
       "showSpinner": false,
       "androidScaleType": "FIT_CENTER"
     }
-  }
+  },
+  "backgroundColor": "#0d0d0d"
 }

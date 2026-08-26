@@ -12,7 +12,7 @@ export default function BottomNav() {
   } = useAppState();
 
   return (
-    <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:480,background:"#111",borderTop:"1px solid #2a2a2a",display:"flex",zIndex:100,paddingBottom:"env(safe-area-inset-bottom)"}}>
+    <div style={{position:"fixed",bottom:0,left:"50%",transform:"translateX(-50%)",width:"100%",maxWidth:480,background:"#111",borderTop:"1px solid #2a2a2a",display:"flex",zIndex:100,paddingBottom:"var(--op-safe-bottom)"}}>
       {tabs.map(t=>{
         const profileIncomplete = t.id==="profile" && (!wifeName||!wifeBirthYear||!cycleStartDate);
         return (

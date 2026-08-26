@@ -9,7 +9,7 @@ export const S = {
   header: {
     position: 'sticky', top: 0, background: '#0d0d0d', borderBottom: '1px solid #1e1e1e',
     display: 'flex', alignItems: 'center', gap: 12, padding: '14px 16px',
-    paddingTop: 'calc(env(safe-area-inset-top, 0px) + 14px)', zIndex: 2,
+    paddingTop: 'calc(var(--op-safe-top) + 14px)', zIndex: 2,
   },
   back: {
     background: '#1a1a1a', border: '1px solid #2a2a2a', color: '#f0ece4',

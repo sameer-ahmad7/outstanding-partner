@@ -69,9 +69,21 @@ export default function AppShell() {
     : (authUser && !emailVerified ? "verify" : authScreen);
 
   return (
-    <div className="op-app-frame" style={{minHeight:"100vh",background:"#0d0d0d",color:"#f0ece4",fontFamily:"'DM Sans','Helvetica Neue',sans-serif",maxWidth:480,margin:"0 auto",position:"relative",paddingBottom:"calc(90px + env(safe-area-inset-bottom))"}}>
+    <div className="op-app-frame" style={{minHeight:"100vh",background:"#0d0d0d",color:"#f0ece4",fontFamily:"'DM Sans','Helvetica Neue',sans-serif",maxWidth:480,margin:"0 auto",position:"relative",paddingTop:"var(--op-safe-top)",paddingBottom:"calc(90px + var(--op-safe-bottom))"}}>
       <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"/>
       <style>{`
+        /* Capacitor 8's SystemBars injects --safe-area-inset-* onto documentElement as an
+           inline style (Android). iOS gets nothing there and uses the CSS env() function
+           instead. Reading var() with an env() fallback covers both, and the 0px default
+           keeps plain web builds correct. Do not read env() alone — on Android it reports
+           display cutouts only, not the status/navigation bars, so content ran underneath
+           them in edge-to-edge (targetSdk 36 forces edge-to-edge). */
+        :root{
+          --op-safe-top: var(--safe-area-inset-top, env(safe-area-inset-top, 0px));
+          --op-safe-bottom: var(--safe-area-inset-bottom, env(safe-area-inset-bottom, 0px));
+          --op-safe-left: var(--safe-area-inset-left, env(safe-area-inset-left, 0px));
+          --op-safe-right: var(--safe-area-inset-right, env(safe-area-inset-right, 0px));
+        }
         @keyframes slideDown{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}
         /* On wider screens (desktop web, tablets) present the mobile-first app as a
            centered phone-width column instead of stretching full width.

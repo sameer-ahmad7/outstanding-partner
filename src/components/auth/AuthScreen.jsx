@@ -75,7 +75,7 @@ export default function AuthScreen({
       <div style={{ width: "100%", maxWidth: 424 }}>
       {onClose && (
         <button onClick={onClose} aria-label="Close"
-          style={{ position: "absolute", top: "max(16px,env(safe-area-inset-top))", right: 18, background: "#1a1a1a", border: "1px solid #2a2a2a", color: "#888", fontSize: 17, lineHeight: "30px", width: 32, height: 32, borderRadius: "50%", cursor: "pointer", padding: 0 }}>×</button>
+          style={{ position: "absolute", top: "max(16px,var(--op-safe-top))", right: 18, background: "#1a1a1a", border: "1px solid #2a2a2a", color: "#888", fontSize: 17, lineHeight: "30px", width: 32, height: 32, borderRadius: "50%", cursor: "pointer", padding: 0 }}>×</button>
       )}
 
       {authScreen === "login" && (

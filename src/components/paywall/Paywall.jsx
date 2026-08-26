@@ -85,13 +85,13 @@ export default function Paywall({
   );
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "#0d0d0d", zIndex: 9998, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "max(32px,env(safe-area-inset-top)) 24px calc(24px + env(safe-area-inset-bottom))", boxSizing: "border-box", overflowY: "auto" }}>
+    <div style={{ position: "fixed", inset: 0, background: "#0d0d0d", zIndex: 9998, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "max(32px,var(--op-safe-top)) 24px calc(24px + var(--op-safe-bottom))", boxSizing: "border-box", overflowY: "auto" }}>
       {/* Overlay is viewport-wide; keep the sheet itself phone-width on desktop. */}
       <div style={{ width: "100%", maxWidth: 424 }}>
 
       {onClose && (
         <button onClick={onClose} aria-label="Close"
-          style={{ position: "absolute", top: "max(16px,env(safe-area-inset-top))", right: 18, background: "#1a1a1a", border: "1px solid #2a2a2a", color: "#888", fontSize: 17, lineHeight: "30px", width: 32, height: 32, borderRadius: "50%", cursor: "pointer", padding: 0 }}>×</button>
+          style={{ position: "absolute", top: "max(16px,var(--op-safe-top))", right: 18, background: "#1a1a1a", border: "1px solid #2a2a2a", color: "#888", fontSize: 17, lineHeight: "30px", width: 32, height: 32, borderRadius: "50%", cursor: "pointer", padding: 0 }}>×</button>
       )}
 
       <div style={{ textAlign: "center", marginBottom: 14 }}>

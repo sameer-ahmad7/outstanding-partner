@@ -11,7 +11,25 @@ export default function GuideTab() {
     completedDays,
     safeGetJSON,
     setCompletedDays,
+    PremiumGate,
+    isPremium,
+    requirePremium,
   } = scope;
+
+  // The whole tab is the 30/60/90-Day Partner Challenge, which FEATURE_TIERING_FINAL.md puts
+  // behind Premium. Free users still accrue completedDays from their daily missions, so we
+  // surface that count — it is a stronger hook than an empty lock screen.
+  if (!isPremium) {
+    const done = (completedDays || []).length;
+    return (
+      <PremiumGate feature="The 90-Day Partner Challenge"
+        blurb={done > 0
+          ? `You've already completed ${done} day${done === 1 ? '' : 's'} of missions. Premium turns that into a structured 30 / 60 / 90-day programme with levels, streaks and a new challenge every month.`
+          : "A structured 30 / 60 / 90-day programme that builds on your daily missions — levels, streaks, and a new challenge every month once you finish."}
+        cta="Unlock the Challenge"
+        onUpgrade={requirePremium} />
+    );
+  }
 
   return (
     <div>

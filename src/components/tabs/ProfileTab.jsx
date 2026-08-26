@@ -723,8 +723,9 @@ export default function ProfileTab() {
                       </div>)}
                   </div>
     
-                  {/* Upcoming anniversary reminder */}
-                  {anniversaryDate && (() => {
+                  {/* Upcoming anniversary reminder — Premium per FEATURE_TIERING_FINAL.md
+                      ("anniversary + birthday reminders, 21-day advance warning"). */}
+                  {isPremium && anniversaryDate && (() => {
               const today = new Date();
               const thisYear = today.getFullYear();
               const anniv = new Date(anniversaryDate);

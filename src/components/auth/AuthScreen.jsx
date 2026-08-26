@@ -70,9 +70,13 @@ export default function AuthScreen({
     handleResetPassword(newPassword);
   };
   return (
-    <div style={{ position: "fixed", inset: 0, background: "#0d0d0d", zIndex: 9999, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "40px 28px", boxSizing: "border-box", overflowY: "auto" }}>
-      {/* The overlay spans the viewport; this keeps the form itself phone-width on desktop. */}
-      <div style={{ width: "100%", maxWidth: 424 }}>
+    <div style={{ position: "fixed", inset: 0, background: "#0d0d0d", zIndex: 9999, display: "flex", flexDirection: "column", alignItems: "center", padding: "40px 28px", boxSizing: "border-box", overflowY: "auto" }}>
+      {/* Keeps the form phone-width on desktop, and `margin:auto` centres it vertically.
+          Do NOT use justify-content:center here — when the form is taller than the viewport
+          that overflows in BOTH directions and the top becomes unscrollable, which cut off
+          the "Create your free account" heading on short screens. margin:auto centres only
+          the spare space, so overflow stays reachable. */}
+      <div style={{ width: "100%", maxWidth: 424, margin: "auto" }}>
       {onClose && (
         <button onClick={onClose} aria-label="Close"
           style={{ position: "absolute", top: "max(16px,var(--op-safe-top))", right: 18, background: "#1a1a1a", border: "1px solid #2a2a2a", color: "#888", fontSize: 17, lineHeight: "30px", width: 32, height: 32, borderRadius: "50%", cursor: "pointer", padding: 0 }}>×</button>

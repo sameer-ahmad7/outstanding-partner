@@ -85,9 +85,9 @@ export default function Paywall({
   );
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "#0d0d0d", zIndex: 9998, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "max(32px,var(--op-safe-top)) 24px calc(24px + var(--op-safe-bottom))", boxSizing: "border-box", overflowY: "auto" }}>
-      {/* Overlay is viewport-wide; keep the sheet itself phone-width on desktop. */}
-      <div style={{ width: "100%", maxWidth: 424 }}>
+    <div style={{ position: "fixed", inset: 0, background: "#0d0d0d", zIndex: 9998, display: "flex", flexDirection: "column", alignItems: "center", padding: "max(32px,var(--op-safe-top)) 24px calc(24px + var(--op-safe-bottom))", boxSizing: "border-box", overflowY: "auto" }}>
+      {/* margin:auto rather than justify-content:center — see AuthScreen for why. */}
+      <div style={{ width: "100%", maxWidth: 424, margin: "auto" }}>
 
       {onClose && (
         <button onClick={onClose} aria-label="Close"

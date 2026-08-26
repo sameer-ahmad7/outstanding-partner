@@ -85,7 +85,9 @@ export default function Paywall({
   );
 
   return (
-    <div style={{ position: "fixed", inset: 0, background: "#0d0d0d", zIndex: 9998, display: "flex", flexDirection: "column", justifyContent: "center", padding: "max(32px,env(safe-area-inset-top)) 24px calc(24px + env(safe-area-inset-bottom))", boxSizing: "border-box", overflowY: "auto" }}>
+    <div style={{ position: "fixed", inset: 0, background: "#0d0d0d", zIndex: 9998, display: "flex", flexDirection: "column", justifyContent: "center", alignItems: "center", padding: "max(32px,env(safe-area-inset-top)) 24px calc(24px + env(safe-area-inset-bottom))", boxSizing: "border-box", overflowY: "auto" }}>
+      {/* Overlay is viewport-wide; keep the sheet itself phone-width on desktop. */}
+      <div style={{ width: "100%", maxWidth: 424 }}>
 
       {onClose && (
         <button onClick={onClose} aria-label="Close"
@@ -166,6 +168,7 @@ export default function Paywall({
       {!onClose && (
         <button onClick={async () => { try { await rcLogOut(); } catch (e) { /* ignore */ } if (!isPreviewMode) { try { await signOutUser(); } catch (e) { /* ignore */ } } setAuthUser(null); }} style={{ background: "transparent", border: "none", color: "#444", fontSize: 11, cursor: "pointer", textAlign: "center", width: "100%" }}>Sign out</button>
       )}
+      </div>
     </div>
   );
 }

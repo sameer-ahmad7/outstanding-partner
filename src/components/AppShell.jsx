@@ -74,13 +74,16 @@ export default function AppShell() {
       <style>{`
         @keyframes slideDown{from{opacity:0;transform:translateY(-12px)}to{opacity:1;transform:translateY(0)}}
         /* On wider screens (desktop web, tablets) present the mobile-first app as a
-           centered phone-width column instead of stretching full width. The transform
-           also makes this element the containing block for its position:fixed children
-           (auth / paywall / onboarding / toasts / bottom nav) so those overlays frame
-           to the column too. Phones/native (<520px) are unaffected. */
+           centered phone-width column instead of stretching full width.
+           NB: do NOT put a transform on this element. A transform makes it the containing
+           block for its position:fixed descendants, so the auth/paywall overlays resolved
+           inset:0 against the FRAME (which grows with content — 4400px on the profile tab)
+           instead of the viewport. The overlay then centred its contents thousands of pixels
+           down the page and appeared blank until you scrolled. The overlays constrain their
+           own content width instead. Phones/native (<520px) never hit this. */
         @media (min-width:520px){
           html,body{background:#050505;}
-          .op-app-frame{transform:translateZ(0);box-shadow:0 0 0 1px rgba(255,255,255,.06), 0 24px 80px rgba(0,0,0,.55);}
+          .op-app-frame{box-shadow:0 0 0 1px rgba(255,255,255,.06), 0 24px 80px rgba(0,0,0,.55);}
         }
       `}</style>
 

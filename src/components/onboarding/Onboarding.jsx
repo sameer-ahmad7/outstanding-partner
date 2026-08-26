@@ -145,10 +145,14 @@ export default function Onboarding({ onboardSlide, setOnboardSlide, onboarded, s
 
         return (
           <div
-            style={{position:"fixed",inset:0,background:"#0d0d0d",zIndex:9997,display:"flex",flexDirection:"column",boxSizing:"border-box"}}
+            style={{position:"fixed",inset:0,background:"#0d0d0d",zIndex:9997,display:"flex",flexDirection:"column",alignItems:"center",boxSizing:"border-box"}}
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
           >
+            {/* The overlay fills the viewport; this column keeps it phone-width on desktop.
+                Children below rely on flex stretch, so they live inside the column rather
+                than being centred individually. */}
+            <div style={{width:"100%",maxWidth:480,flex:1,display:"flex",flexDirection:"column",minHeight:0}}>
             {/* Progress dots */}
             <div style={{display:"flex",gap:6,justifyContent:"center",paddingTop:52,paddingBottom:16,flexShrink:0}}>
               {ONBOARDING_SLIDES.map((_,i)=>(
@@ -445,6 +449,7 @@ export default function Onboarding({ onboardSlide, setOnboardSlide, onboarded, s
                   </button>
                 </div>
               )}
+            </div>
             </div>
           </div>
         );

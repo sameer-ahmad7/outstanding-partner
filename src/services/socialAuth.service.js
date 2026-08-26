@@ -21,8 +21,17 @@ async function initSocial() {
   if (!initPromise) {
     initPromise = (async () => {
       const { SocialLogin } = await import('@capgo/capacitor-social-login');
+      const platform = Capacitor.getPlatform();
+      // Apple is configured on iOS only. On Android the plugin's Apple provider drives a
+      // web flow and demands `apple.android.redirectUrl`; passing an apple block without it
+      // makes initialize() reject with "apple.android.redirectUrl is null or empty" — and
+      // because Google shares this one initialize call, that failure took Google down too.
+      // socialAuthAvailable() already hides the Apple button off iOS, so there is nothing
+      // to configure here for Android.
       await SocialLogin.initialize({
-        apple: { clientId: import.meta.env.VITE_APPLE_SERVICES_ID || undefined },
+        ...(platform === 'ios' && import.meta.env.VITE_APPLE_SERVICES_ID
+          ? { apple: { clientId: import.meta.env.VITE_APPLE_SERVICES_ID } }
+          : {}),
         google: {
           // iOS uses the iOS client id; Android authenticates via the SHA-1 registered against
           // the Android client id but still needs the WEB client id as the serverClientId in
@@ -32,7 +41,12 @@ async function initSocial() {
         },
       });
       return SocialLogin;
-    })();
+    })().catch((e) => {
+      // Don't cache a rejected promise: initialize() failing once would otherwise poison
+      // every later sign-in attempt for the lifetime of the app process.
+      initPromise = null;
+      throw e;
+    });
   }
   return initPromise;
 }

@@ -165,7 +165,7 @@ export default function TodayTab() {
       })()}
     
                 {/* ── HER CYCLE — BIG, first thing he sees ─────────── */}
-                {cycleStartDate && (() => {
+                {hasAccount && cycleStartDate && (() => {
         const phases = [{
           key: "menstrual",
           label: "Menstrual",
@@ -302,8 +302,55 @@ export default function TodayTab() {
                     </div>;
       })()}
     
+                {/* No account yet — cycle tracking is the strongest reason to sign up, so ask
+                    for it here rather than only burying the prompt in Profile. */}
+                {!hasAccount && <div onClick={() => requireAccount('signup')} style={{
+        background: "linear-gradient(135deg,#1a0a1a,#111)",
+        border: "1px solid #8e44ad50",
+        borderRadius: 16,
+        padding: "16px 18px",
+        marginBottom: 14,
+        cursor: "pointer"
+      }}>
+                    <div style={{
+          display: "flex",
+          gap: 12,
+          alignItems: "center",
+          marginBottom: 12
+        }}>
+                      <span style={{
+            fontSize: 24,
+            flexShrink: 0
+          }}>🌙</span>
+                      <div>
+                        <div style={{
+              fontSize: 14,
+              fontWeight: 700,
+              color: "#f0ece4",
+              marginBottom: 3
+            }}>Sign up to unlock cycle tracking</div>
+                        <div style={{
+              fontSize: 11.5,
+              color: "#8a8a8a",
+              lineHeight: 1.5
+            }}>Know her cycle day and phase every day — and what she needs because of it. Free, no card.</div>
+                      </div>
+                    </div>
+                    <button onClick={(e) => { e.stopPropagation(); requireAccount('signup'); }} style={{
+          width: "100%",
+          background: "linear-gradient(135deg,#c0392b,#8e44ad)",
+          color: "#fff",
+          border: "none",
+          borderRadius: 12,
+          padding: "12px 16px",
+          fontSize: 13.5,
+          fontWeight: 800,
+          cursor: "pointer"
+        }}>Sign up free to unlock</button>
+                  </div>}
+
                 {/* Cycle date missing prompt */}
-                {!cycleStartDate && <div onClick={() => setTab("profile")} style={{
+                {hasAccount && !cycleStartDate && <div onClick={() => setTab("profile")} style={{
         background: "#1a1a1a",
         border: "1px dashed #8e44ad50",
         borderRadius: 16,

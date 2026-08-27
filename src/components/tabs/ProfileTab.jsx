@@ -177,6 +177,421 @@ export default function ProfileTab() {
     
             {/* OVERVIEW */}
             {profileSection === "overview" && <div>
+                {/* Signed out — the way back in. Without the old auth wall, Sign Out otherwise
+                    left the user with no route to an account. */}
+                {!hasAccount && <div style={{
+          marginBottom: 20,
+          background: "#1a1a1a",
+          border: "1px solid #2a2a2a",
+          borderRadius: 14,
+          padding: 16
+        }}>
+                    <div style={{
+            fontSize: 12,
+            color: "#666",
+            fontWeight: 700,
+            textTransform: "uppercase",
+            letterSpacing: "0.1em",
+            marginBottom: 8
+          }}>Your Account</div>
+                    <div style={{
+            fontSize: 13,
+            color: "#888",
+            lineHeight: 1.6,
+            marginBottom: 12
+          }}>You're not signed in. Create a free account to save your progress, streak and notes — and to keep them if you change device.</div>
+                    <button onClick={() => requireAccount('login')} style={{
+            width: "100%",
+            background: "#c0392b",
+            color: "#fff",
+            border: "none",
+            borderRadius: 10,
+            padding: "12px 14px",
+            fontSize: 14,
+            fontWeight: 700,
+            cursor: "pointer",
+            marginBottom: 8
+          }}>Sign In</button>
+                    <button onClick={() => requireAccount('signup')} style={{
+            width: "100%",
+            background: "transparent",
+            border: "1px solid #333",
+            borderRadius: 10,
+            padding: "11px 14px",
+            fontSize: 13,
+            color: "#aaa",
+            cursor: "pointer"
+          }}>Create a free account</button>
+                  </div>}
+
+                {/* Account Info */}
+                {authUser && <div style={{
+          marginBottom: 20,
+          background: "#1a1a1a",
+          border: "1px solid #2a2a2a",
+          borderRadius: 14,
+          padding: 16
+        }}>
+                    <div style={{
+            fontSize: 12,
+            color: "#666",
+            fontWeight: 700,
+            textTransform: "uppercase",
+            letterSpacing: "0.1em",
+            marginBottom: 10
+          }}>Your Account</div>
+                    <div style={{ marginBottom: 12 }}>
+                      <div style={{
+                fontSize: 14,
+                color: "#f0ece4",
+                fontWeight: 600
+              }}>{authUser.name || "Your account"}</div>
+                      <div style={{
+                fontSize: 12,
+                color: "#666",
+                marginTop: 2,
+                wordBreak: "break-all"
+              }}>{authUser.email}</div>
+                      <div style={{
+                fontSize: 11,
+                marginTop: 4,
+                fontWeight: 600,
+                color: lifetimeAccess ? "#27ae60" : isPremium ? "#8e44ad" : "#27ae60"
+              }}>
+                        {lifetimeAccess
+                  ? "✓ Free Forever"
+                  : subscriptionPlan
+                    ? `✓ Outstanding Partner — ${
+                        subscriptionPlan.priceString
+                          ? `${subscriptionPlan.priceString}${subscriptionPlan.type === "annual" ? "/year" : subscriptionPlan.type === "monthly" ? "/month" : ""}`
+                          : subscriptionPlan.type === "annual" ? "Yearly" : subscriptionPlan.type === "monthly" ? "Monthly" : "Premium"
+                      }`
+                    : isPremium
+                      ? "✓ Outstanding Partner — Premium"
+                      : "Free plan"}
+                      </div>
+                    </div>
+                    <button onClick={async () => {
+              try {
+                await rcLogOut();
+              } catch (e) {}
+              if (!isPreviewMode) {
+                try {
+                  await signOutUser();
+                } catch (e) {}
+              }
+              try {
+                Object.keys(localStorage).forEach(k => {
+                  if (k.startsWith('op_hydrated_')) sessionStorage.removeItem(k);
+                });
+              } catch (e) {}
+              safeSet("authToken", "");
+              safeSet("authUser", "");
+              safeSet("subscribed", "");
+              safeSet("subTier", "basic");
+              setAuthUser(null);
+              setSubscribed(false);
+              setSubTier("basic");
+              setAuthEmail("");
+              setAuthPassword("");
+            }} style={{
+              width: "100%",
+              background: "#111",
+              border: "1px solid #333",
+              borderRadius: 10,
+              padding: "10px 14px",
+              fontSize: 13,
+              color: "#888",
+              cursor: "pointer",
+              marginBottom: 8
+            }}>
+                      Sign Out
+                    </button>
+                    {!isPreviewMode && <button onClick={() => { setShowChangePw(v => !v); setCpMsg(null); setCpNew(""); setCpConfirm(""); }} style={{
+              width: "100%",
+              background: "#111",
+              border: "1px solid #333",
+              borderRadius: 10,
+              padding: "10px 14px",
+              fontSize: 13,
+              color: "#888",
+              cursor: "pointer",
+              marginBottom: 8
+            }}>
+                      🔑 Change Password
+                    </button>}
+                    {!isPreviewMode && showChangePw && <div style={{
+              background: "#141414",
+              border: "1px solid #2a2a2a",
+              borderRadius: 10,
+              padding: 12,
+              marginBottom: 8
+            }}>
+                      <input type="password" value={cpNew} onChange={e => setCpNew(e.target.value)} placeholder="New password (min 8 characters)" style={{ width: "100%", background: "#1a1a1a", border: "1px solid #333", color: "#f0ece4", borderRadius: 8, padding: "10px 12px", fontSize: 14, boxSizing: "border-box", fontFamily: "inherit", marginBottom: 8 }} />
+                      <input type="password" value={cpConfirm} onChange={e => setCpConfirm(e.target.value)} placeholder="Confirm new password" onKeyDown={e => e.key === "Enter" && submitChangePw()} style={{ width: "100%", background: "#1a1a1a", border: "1px solid #333", color: "#f0ece4", borderRadius: 8, padding: "10px 12px", fontSize: 14, boxSizing: "border-box", fontFamily: "inherit", marginBottom: 8 }} />
+                      {cpMsg && <div style={{ color: cpMsg.ok ? "#27ae60" : "#e74c3c", fontSize: 12, marginBottom: 8 }}>{cpMsg.text}</div>}
+                      <button disabled={cpBusy} onClick={submitChangePw} style={{ width: "100%", background: "#c0392b", color: "#fff", border: "none", borderRadius: 8, padding: "10px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", opacity: cpBusy ? 0.7 : 1 }}>
+                        {cpBusy ? "Updating…" : "Update Password"}
+                      </button>
+                    </div>}
+                    {!isPremium && <button onClick={() => setSubscribed(false)} style={{
+            width: "100%",
+            background: "linear-gradient(135deg,#8e44ad,#c0392b)",
+            color: "#fff",
+            border: "none",
+            borderRadius: 10,
+            padding: "10px 14px",
+            fontSize: 13,
+            fontWeight: 700,
+            cursor: "pointer",
+            marginBottom: 8
+          }}>
+                        
+                      </button>}
+                    <button onClick={() => {
+            setOnboardSlide(0);
+            setReplayGuide(true);
+          }} style={{
+            width: "100%",
+            background: "#111",
+            border: "1px solid #2a2a2a",
+            borderRadius: 10,
+            padding: "10px 14px",
+            fontSize: 13,
+            color: "#888",
+            cursor: "pointer"
+          }}>
+                      📖 Replay App Guide
+                    </button>
+                  </div>}
+    
+                {/* Premium card. Locks scattered through the app tell you what you can't reach;
+                    this is the one place that says what Premium actually IS and lets you buy it. */}
+                {!lifetimeAccess && (() => {
+                  const pkgs = (subscription?.offering?.availablePackages) || [];
+                  const m = pkgs.find(p => p.packageType === 'MONTHLY') || pkgs[0];
+                  const price = m?.product?.priceString;
+                  const ip = m?.product?.introPrice;
+                  const freeUnit = ip && Number(ip.price) === 0 && ip.periodUnit
+                    ? String(ip.periodUnit).toLowerCase().replace(/s$/, '')
+                    : null;
+                  const perks = [
+                    ["🌙", "Her full cycle playbook", "What she needs and what to avoid, every phase"],
+                    ["🔮", "Cycle forecast", "See her toughest week days before it arrives"],
+                    ["💬", "The whole text library", "Every phase-matched message, not one a day"],
+                    ["🎲", "All activities & date ideas", "60 at-home activities, 100 date ideas"],
+                    ["📈", "Streaks, history & Game Plan", "Your progress saved and the long game mapped"],
+                    ["🔔", "Phase-change reminders", "A heads-up before her needs shift"],
+                  ];
+                  const fmtDate = (iso) => {
+                    if (!iso) return null;
+                    try {
+                      return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
+                    } catch (e) { return null; }
+                  };
+
+                  // ---- Active subscriber: show what they have, when it renews, and how to manage it.
+                  if (isPremium) {
+                    const ent = subscriptionEntitlement;
+                    const renews = fmtDate(ent?.expiresAt);
+                    const started = fmtDate(ent?.startedAt);
+                    // Whole days remaining, rounded up, so "1 day left" means it ends tomorrow.
+                    const daysLeft = ent?.expiresAt
+                      ? Math.max(0, Math.ceil((new Date(ent.expiresAt) - Date.now()) / 86400000))
+                      : null;
+                    // Express long spans in months. A one-month trial bought on 25 August ends on
+                    // 25 September, which is 31 days — arithmetically right but it reads as a
+                    // contradiction next to an offer that promised "1 month free".
+                    const remaining = daysLeft == null ? null
+                      : daysLeft === 0 ? "Ends today"
+                      : daysLeft === 1 ? "1 day left"
+                      : daysLeft < 30 ? `${daysLeft} days left`
+                      : (() => {
+                          const months = Math.round(daysLeft / 30.44);
+                          if (months >= 12) return "About 1 year left";
+                          return months <= 1 ? "About 1 month left" : `About ${months} months left`;
+                        })();
+                    // Cancelling happens wherever the money is taken, and each store has a
+                    // different route. Telling someone "cancel in Settings" when they paid by
+                    // card on the web is worse than saying nothing.
+                    const store = ent?.store || null;
+                    const cancelInfo = (() => {
+                      if (store === 'app_store' || store === 'mac_app_store') return {
+                        label: 'Apple',
+                        how: 'Open the Settings app → tap your name → Subscriptions → Outstanding Partner → Cancel Subscription.',
+                        cta: 'Open subscription settings',
+                      };
+                      if (store === 'play_store') return {
+                        label: 'Google Play',
+                        how: 'Open the Play Store → tap your profile → Payments & subscriptions → Subscriptions → Outstanding Partner → Cancel.',
+                        cta: 'Open Play subscriptions',
+                      };
+                      if (store === 'stripe' || store === 'rc_billing') return {
+                        label: 'card',
+                        how: 'Manage your payment details or cancel any time in the billing portal. Cancelling keeps your access until the end of the period you have paid for.',
+                        cta: 'Open billing portal',
+                      };
+                      if (store === 'promotional') return {
+                        label: null,
+                        how: 'This access was granted directly, so there is nothing to cancel and you will not be charged.',
+                        cta: null,
+                      };
+                      if (store === 'amazon') return {
+                        label: 'Amazon',
+                        how: 'Manage this subscription from your Amazon Appstore account.',
+                        cta: 'Manage subscription',
+                      };
+                      return { label: null, how: null, cta: 'Manage subscription' };
+                    })();
+                    const planLabel = subscriptionPlan?.type === 'annual' ? 'Yearly'
+                      : subscriptionPlan?.type === 'monthly' ? 'Monthly' : 'Premium';
+                    const planPrice = subscriptionPlan?.priceString;
+                    const cancelled = ent && ent.willRenew === false;
+                    return (
+                      <div style={{
+                        marginBottom: 20,
+                        background: "linear-gradient(135deg,#0a1a0a,#0f0f0f)",
+                        border: "1px solid #27ae6050",
+                        borderRadius: 16,
+                        padding: 18
+                      }}>
+                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                          <span style={{ fontSize: 18 }}>👑</span>
+                          <div style={{ fontSize: 12, color: "#27ae60", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em" }}>
+                            {ent?.isTrial ? "Free trial" : "Premium — active"}
+                          </div>
+                        </div>
+                        <div style={{ fontSize: 16, fontWeight: 700, color: "#f0ece4", fontFamily: "'Playfair Display',serif", marginBottom: 12 }}>
+                          {ent?.isTrial ? "You're on your free trial." : "You have everything unlocked."}
+                        </div>
+
+                        <div style={{ background: "#00000040", borderRadius: 12, padding: "12px 14px", marginBottom: 12 }}>
+                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 7 }}>
+                            <span style={{ fontSize: 12, color: "#8a8a8a" }}>Plan</span>
+                            <span style={{ fontSize: 12, color: "#f0ece4", fontWeight: 700 }}>
+                              {planLabel}{planPrice ? ` · ${planPrice}` : ""}
+                            </span>
+                          </div>
+                          {renews && (
+                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 7 }}>
+                              <span style={{ fontSize: 12, color: "#8a8a8a" }}>
+                                {cancelled ? "Access ends" : ent?.isTrial ? "First charge" : "Renews"}
+                              </span>
+                              <span style={{ fontSize: 12, color: cancelled ? "#e67e22" : "#f0ece4", fontWeight: 700 }}>{renews}</span>
+                            </div>
+                          )}
+                          {started && renews && (
+                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 7 }}>
+                              <span style={{ fontSize: 12, color: "#8a8a8a" }}>
+                                {ent?.isTrial ? "Trial period" : "Current period"}
+                              </span>
+                              <span style={{ fontSize: 12, color: "#f0ece4", fontWeight: 700 }}>{started} – {renews}</span>
+                            </div>
+                          )}
+                          {remaining && (
+                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 7 }}>
+                              <span style={{ fontSize: 12, color: "#8a8a8a" }}>
+                                {ent?.isTrial ? "Trial remaining" : cancelled ? "Access remaining" : "Renews in"}
+                              </span>
+                              <span style={{ fontSize: 12, color: daysLeft <= 3 ? "#e67e22" : "#f0ece4", fontWeight: 700 }}>{remaining}</span>
+                            </div>
+                          )}
+                          {ent?.store && (
+                            <div style={{ display: "flex", justifyContent: "space-between" }}>
+                              <span style={{ fontSize: 12, color: "#8a8a8a" }}>Billed through</span>
+                              <span style={{ fontSize: 12, color: "#f0ece4", fontWeight: 700 }}>
+                                {store === 'app_store' || store === 'mac_app_store' ? 'Apple'
+                                  : store === 'play_store' ? 'Google Play'
+                                  : store === 'stripe' || store === 'rc_billing' ? 'Card'
+                                  : String(ent.store).replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+
+                        {ent?.isTrial && renews && !cancelled && (
+                          <div style={{ fontSize: 11.5, color: "#8a8a8a", lineHeight: 1.5, marginBottom: 10 }}>
+                            You won't be charged until {renews}. Cancel any time before then and you won't pay anything.
+                          </div>
+                        )}
+                        {cancelled && (
+                          <div style={{ fontSize: 11.5, color: "#e67e22", lineHeight: 1.5, marginBottom: 10 }}>
+                            Auto-renew is off. You keep full access until {renews || "the end of the period"}.
+                          </div>
+                        )}
+
+                        {cancelInfo.how && (
+                          <div style={{ background: "#00000030", borderRadius: 10, padding: "11px 13px", marginBottom: 10 }}>
+                            <div style={{ fontSize: 11, color: "#8a8a8a", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 5 }}>
+                              How to cancel
+                            </div>
+                            <div style={{ fontSize: 11.5, color: "#aaa", lineHeight: 1.6 }}>{cancelInfo.how}</div>
+                          </div>
+                        )}
+
+                        {cancelInfo.cta && subscriptionManageURL && (
+                          <button onClick={() => openExternal(subscriptionManageURL)} style={{
+                            width: "100%",
+                            background: "transparent",
+                            border: "1px solid #333",
+                            borderRadius: 10,
+                            padding: "11px 14px",
+                            fontSize: 13,
+                            color: "#aaa",
+                            cursor: "pointer"
+                          }}>{cancelInfo.cta}</button>
+                        )}
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div style={{
+                      marginBottom: 20,
+                      background: "linear-gradient(135deg,#1a0a1a,#0f0f0f)",
+                      border: "1px solid #8e44ad50",
+                      borderRadius: 16,
+                      padding: 18
+                    }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
+                        <span style={{ fontSize: 18 }}>👑</span>
+                        <div style={{ fontSize: 12, color: "#8e44ad", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em" }}>Premium</div>
+                      </div>
+                      <div style={{ fontSize: 16, fontWeight: 700, color: "#f0ece4", fontFamily: "'Playfair Display',serif", marginBottom: 14 }}>
+                        Stop guessing what she needs.
+                      </div>
+                      {perks.map(([icon, title, body]) => (
+                        <div key={title} style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 11 }}>
+                          <span style={{ fontSize: 14, lineHeight: "18px" }}>{icon}</span>
+                          <div>
+                            <div style={{ fontSize: 13, fontWeight: 700, color: "#f0ece4", lineHeight: 1.3 }}>{title}</div>
+                            <div style={{ fontSize: 11.5, color: "#8a8a8a", lineHeight: 1.5, marginTop: 1 }}>{body}</div>
+                          </div>
+                        </div>
+                      ))}
+                      <button onClick={requirePremium} style={{
+                        width: "100%",
+                        background: "linear-gradient(135deg,#c0392b,#8e44ad)",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: 12,
+                        padding: "14px 16px",
+                        fontSize: 14,
+                        fontWeight: 800,
+                        cursor: "pointer",
+                        marginTop: 4
+                      }}>
+                        {freeUnit ? `Start My Free ${freeUnit.charAt(0).toUpperCase() + freeUnit.slice(1)}` : "Upgrade to Premium"}
+                      </button>
+                      <div style={{ fontSize: 11, color: "#8a8a8a", textAlign: "center", marginTop: 8, lineHeight: 1.5 }}>
+                        {price
+                          ? (freeUnit ? `Then ${price}/month · cancel anytime` : `${price}/month · cancel anytime`)
+                          : "Cancel anytime"}
+                      </div>
+                    </div>
+                  );
+                })()}
+
                 <div style={{
           marginBottom: 20
         }}>
@@ -300,6 +715,40 @@ export default function ProfileTab() {
                   </div>
                 </div>
     
+                {/* Cycle tracking requires a free account (FEATURE_TIERING_FINAL.md puts
+                    "set up her cycle start date" and today's day/phase/tip in the account tier).
+                    It is also the strongest reason to sign up, so it is the ask we lead with. */}
+                {!hasAccount && (
+                  <div style={{
+                    marginBottom: 20,
+                    background: "linear-gradient(135deg,#1a0a1a,#111)",
+                    border: "1px solid #8e44ad50",
+                    borderRadius: 16,
+                    padding: 18
+                  }}>
+                    <div style={{ fontSize: 22, marginBottom: 8 }}>🌙</div>
+                    <div style={{ fontSize: 16, fontWeight: 700, color: "#f0ece4", fontFamily: "'Playfair Display',serif", marginBottom: 6 }}>
+                      Sign up to unlock cycle tracking
+                    </div>
+                    <div style={{ fontSize: 13, color: "#8a8a8a", lineHeight: 1.6, marginBottom: 14 }}>
+                      Enter her last period date and the app works out her cycle day and phase every
+                      day — so you know what she needs before she has to tell you. Free, no card.
+                    </div>
+                    <button onClick={() => requireAccount('signup')} style={{
+                      width: "100%",
+                      background: "linear-gradient(135deg,#c0392b,#8e44ad)",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: 12,
+                      padding: "13px 16px",
+                      fontSize: 14,
+                      fontWeight: 800,
+                      cursor: "pointer"
+                    }}>Sign up free to unlock</button>
+                  </div>
+                )}
+
+                {hasAccount && <>
                 {/* ── Period & Cycle Tracking ── */}
                 <div style={{
           marginBottom: 20
@@ -520,6 +969,8 @@ export default function ProfileTab() {
                   </div>
                 </div>
     
+                </>}
+
                 {/* Auto-detected signs */}
                 {(zodiac || chineseZodiac || numerology) && <div style={{
           background: "#1a1a1a",
@@ -1196,421 +1647,6 @@ export default function ProfileTab() {
                   </div>
                 </div>
     
-                {/* Premium card. Locks scattered through the app tell you what you can't reach;
-                    this is the one place that says what Premium actually IS and lets you buy it. */}
-                {!lifetimeAccess && (() => {
-                  const pkgs = (subscription?.offering?.availablePackages) || [];
-                  const m = pkgs.find(p => p.packageType === 'MONTHLY') || pkgs[0];
-                  const price = m?.product?.priceString;
-                  const ip = m?.product?.introPrice;
-                  const freeUnit = ip && Number(ip.price) === 0 && ip.periodUnit
-                    ? String(ip.periodUnit).toLowerCase().replace(/s$/, '')
-                    : null;
-                  const perks = [
-                    ["🌙", "Her full cycle playbook", "What she needs and what to avoid, every phase"],
-                    ["🔮", "Cycle forecast", "See her toughest week days before it arrives"],
-                    ["💬", "The whole text library", "Every phase-matched message, not one a day"],
-                    ["🎲", "All activities & date ideas", "60 at-home activities, 100 date ideas"],
-                    ["📈", "Streaks, history & Game Plan", "Your progress saved and the long game mapped"],
-                    ["🔔", "Phase-change reminders", "A heads-up before her needs shift"],
-                  ];
-                  const fmtDate = (iso) => {
-                    if (!iso) return null;
-                    try {
-                      return new Date(iso).toLocaleDateString(undefined, { day: 'numeric', month: 'long', year: 'numeric' });
-                    } catch (e) { return null; }
-                  };
-
-                  // ---- Active subscriber: show what they have, when it renews, and how to manage it.
-                  if (isPremium) {
-                    const ent = subscriptionEntitlement;
-                    const renews = fmtDate(ent?.expiresAt);
-                    const started = fmtDate(ent?.startedAt);
-                    // Whole days remaining, rounded up, so "1 day left" means it ends tomorrow.
-                    const daysLeft = ent?.expiresAt
-                      ? Math.max(0, Math.ceil((new Date(ent.expiresAt) - Date.now()) / 86400000))
-                      : null;
-                    // Express long spans in months. A one-month trial bought on 25 August ends on
-                    // 25 September, which is 31 days — arithmetically right but it reads as a
-                    // contradiction next to an offer that promised "1 month free".
-                    const remaining = daysLeft == null ? null
-                      : daysLeft === 0 ? "Ends today"
-                      : daysLeft === 1 ? "1 day left"
-                      : daysLeft < 30 ? `${daysLeft} days left`
-                      : (() => {
-                          const months = Math.round(daysLeft / 30.44);
-                          if (months >= 12) return "About 1 year left";
-                          return months <= 1 ? "About 1 month left" : `About ${months} months left`;
-                        })();
-                    // Cancelling happens wherever the money is taken, and each store has a
-                    // different route. Telling someone "cancel in Settings" when they paid by
-                    // card on the web is worse than saying nothing.
-                    const store = ent?.store || null;
-                    const cancelInfo = (() => {
-                      if (store === 'app_store' || store === 'mac_app_store') return {
-                        label: 'Apple',
-                        how: 'Open the Settings app → tap your name → Subscriptions → Outstanding Partner → Cancel Subscription.',
-                        cta: 'Open subscription settings',
-                      };
-                      if (store === 'play_store') return {
-                        label: 'Google Play',
-                        how: 'Open the Play Store → tap your profile → Payments & subscriptions → Subscriptions → Outstanding Partner → Cancel.',
-                        cta: 'Open Play subscriptions',
-                      };
-                      if (store === 'stripe' || store === 'rc_billing') return {
-                        label: 'card',
-                        how: 'Manage your payment details or cancel any time in the billing portal. Cancelling keeps your access until the end of the period you have paid for.',
-                        cta: 'Open billing portal',
-                      };
-                      if (store === 'promotional') return {
-                        label: null,
-                        how: 'This access was granted directly, so there is nothing to cancel and you will not be charged.',
-                        cta: null,
-                      };
-                      if (store === 'amazon') return {
-                        label: 'Amazon',
-                        how: 'Manage this subscription from your Amazon Appstore account.',
-                        cta: 'Manage subscription',
-                      };
-                      return { label: null, how: null, cta: 'Manage subscription' };
-                    })();
-                    const planLabel = subscriptionPlan?.type === 'annual' ? 'Yearly'
-                      : subscriptionPlan?.type === 'monthly' ? 'Monthly' : 'Premium';
-                    const planPrice = subscriptionPlan?.priceString;
-                    const cancelled = ent && ent.willRenew === false;
-                    return (
-                      <div style={{
-                        marginBottom: 20,
-                        background: "linear-gradient(135deg,#0a1a0a,#0f0f0f)",
-                        border: "1px solid #27ae6050",
-                        borderRadius: 16,
-                        padding: 18
-                      }}>
-                        <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                          <span style={{ fontSize: 18 }}>👑</span>
-                          <div style={{ fontSize: 12, color: "#27ae60", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em" }}>
-                            {ent?.isTrial ? "Free trial" : "Premium — active"}
-                          </div>
-                        </div>
-                        <div style={{ fontSize: 16, fontWeight: 700, color: "#f0ece4", fontFamily: "'Playfair Display',serif", marginBottom: 12 }}>
-                          {ent?.isTrial ? "You're on your free trial." : "You have everything unlocked."}
-                        </div>
-
-                        <div style={{ background: "#00000040", borderRadius: 12, padding: "12px 14px", marginBottom: 12 }}>
-                          <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 7 }}>
-                            <span style={{ fontSize: 12, color: "#8a8a8a" }}>Plan</span>
-                            <span style={{ fontSize: 12, color: "#f0ece4", fontWeight: 700 }}>
-                              {planLabel}{planPrice ? ` · ${planPrice}` : ""}
-                            </span>
-                          </div>
-                          {renews && (
-                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 7 }}>
-                              <span style={{ fontSize: 12, color: "#8a8a8a" }}>
-                                {cancelled ? "Access ends" : ent?.isTrial ? "First charge" : "Renews"}
-                              </span>
-                              <span style={{ fontSize: 12, color: cancelled ? "#e67e22" : "#f0ece4", fontWeight: 700 }}>{renews}</span>
-                            </div>
-                          )}
-                          {started && renews && (
-                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 7 }}>
-                              <span style={{ fontSize: 12, color: "#8a8a8a" }}>
-                                {ent?.isTrial ? "Trial period" : "Current period"}
-                              </span>
-                              <span style={{ fontSize: 12, color: "#f0ece4", fontWeight: 700 }}>{started} – {renews}</span>
-                            </div>
-                          )}
-                          {remaining && (
-                            <div style={{ display: "flex", justifyContent: "space-between", marginBottom: 7 }}>
-                              <span style={{ fontSize: 12, color: "#8a8a8a" }}>
-                                {ent?.isTrial ? "Trial remaining" : cancelled ? "Access remaining" : "Renews in"}
-                              </span>
-                              <span style={{ fontSize: 12, color: daysLeft <= 3 ? "#e67e22" : "#f0ece4", fontWeight: 700 }}>{remaining}</span>
-                            </div>
-                          )}
-                          {ent?.store && (
-                            <div style={{ display: "flex", justifyContent: "space-between" }}>
-                              <span style={{ fontSize: 12, color: "#8a8a8a" }}>Billed through</span>
-                              <span style={{ fontSize: 12, color: "#f0ece4", fontWeight: 700 }}>
-                                {store === 'app_store' || store === 'mac_app_store' ? 'Apple'
-                                  : store === 'play_store' ? 'Google Play'
-                                  : store === 'stripe' || store === 'rc_billing' ? 'Card'
-                                  : String(ent.store).replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-
-                        {ent?.isTrial && renews && !cancelled && (
-                          <div style={{ fontSize: 11.5, color: "#8a8a8a", lineHeight: 1.5, marginBottom: 10 }}>
-                            You won't be charged until {renews}. Cancel any time before then and you won't pay anything.
-                          </div>
-                        )}
-                        {cancelled && (
-                          <div style={{ fontSize: 11.5, color: "#e67e22", lineHeight: 1.5, marginBottom: 10 }}>
-                            Auto-renew is off. You keep full access until {renews || "the end of the period"}.
-                          </div>
-                        )}
-
-                        {cancelInfo.how && (
-                          <div style={{ background: "#00000030", borderRadius: 10, padding: "11px 13px", marginBottom: 10 }}>
-                            <div style={{ fontSize: 11, color: "#8a8a8a", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.08em", marginBottom: 5 }}>
-                              How to cancel
-                            </div>
-                            <div style={{ fontSize: 11.5, color: "#aaa", lineHeight: 1.6 }}>{cancelInfo.how}</div>
-                          </div>
-                        )}
-
-                        {cancelInfo.cta && subscriptionManageURL && (
-                          <button onClick={() => openExternal(subscriptionManageURL)} style={{
-                            width: "100%",
-                            background: "transparent",
-                            border: "1px solid #333",
-                            borderRadius: 10,
-                            padding: "11px 14px",
-                            fontSize: 13,
-                            color: "#aaa",
-                            cursor: "pointer"
-                          }}>{cancelInfo.cta}</button>
-                        )}
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <div style={{
-                      marginBottom: 20,
-                      background: "linear-gradient(135deg,#1a0a1a,#0f0f0f)",
-                      border: "1px solid #8e44ad50",
-                      borderRadius: 16,
-                      padding: 18
-                    }}>
-                      <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-                        <span style={{ fontSize: 18 }}>👑</span>
-                        <div style={{ fontSize: 12, color: "#8e44ad", fontWeight: 700, textTransform: "uppercase", letterSpacing: "0.1em" }}>Premium</div>
-                      </div>
-                      <div style={{ fontSize: 16, fontWeight: 700, color: "#f0ece4", fontFamily: "'Playfair Display',serif", marginBottom: 14 }}>
-                        Stop guessing what she needs.
-                      </div>
-                      {perks.map(([icon, title, body]) => (
-                        <div key={title} style={{ display: "flex", gap: 10, alignItems: "flex-start", marginBottom: 11 }}>
-                          <span style={{ fontSize: 14, lineHeight: "18px" }}>{icon}</span>
-                          <div>
-                            <div style={{ fontSize: 13, fontWeight: 700, color: "#f0ece4", lineHeight: 1.3 }}>{title}</div>
-                            <div style={{ fontSize: 11.5, color: "#8a8a8a", lineHeight: 1.5, marginTop: 1 }}>{body}</div>
-                          </div>
-                        </div>
-                      ))}
-                      <button onClick={requirePremium} style={{
-                        width: "100%",
-                        background: "linear-gradient(135deg,#c0392b,#8e44ad)",
-                        color: "#fff",
-                        border: "none",
-                        borderRadius: 12,
-                        padding: "14px 16px",
-                        fontSize: 14,
-                        fontWeight: 800,
-                        cursor: "pointer",
-                        marginTop: 4
-                      }}>
-                        {freeUnit ? `Start My Free ${freeUnit.charAt(0).toUpperCase() + freeUnit.slice(1)}` : "Upgrade to Premium"}
-                      </button>
-                      <div style={{ fontSize: 11, color: "#8a8a8a", textAlign: "center", marginTop: 8, lineHeight: 1.5 }}>
-                        {price
-                          ? (freeUnit ? `Then ${price}/month · cancel anytime` : `${price}/month · cancel anytime`)
-                          : "Cancel anytime"}
-                      </div>
-                    </div>
-                  );
-                })()}
-
-                {/* Signed out — the way back in. Without the old auth wall, Sign Out otherwise
-                    left the user with no route to an account. */}
-                {!hasAccount && <div style={{
-          marginBottom: 20,
-          background: "#1a1a1a",
-          border: "1px solid #2a2a2a",
-          borderRadius: 14,
-          padding: 16
-        }}>
-                    <div style={{
-            fontSize: 12,
-            color: "#666",
-            fontWeight: 700,
-            textTransform: "uppercase",
-            letterSpacing: "0.1em",
-            marginBottom: 8
-          }}>Your Account</div>
-                    <div style={{
-            fontSize: 13,
-            color: "#888",
-            lineHeight: 1.6,
-            marginBottom: 12
-          }}>You're not signed in. Create a free account to save your progress, streak and notes — and to keep them if you change device.</div>
-                    <button onClick={() => requireAccount('login')} style={{
-            width: "100%",
-            background: "#c0392b",
-            color: "#fff",
-            border: "none",
-            borderRadius: 10,
-            padding: "12px 14px",
-            fontSize: 14,
-            fontWeight: 700,
-            cursor: "pointer",
-            marginBottom: 8
-          }}>Sign In</button>
-                    <button onClick={() => requireAccount('signup')} style={{
-            width: "100%",
-            background: "transparent",
-            border: "1px solid #333",
-            borderRadius: 10,
-            padding: "11px 14px",
-            fontSize: 13,
-            color: "#aaa",
-            cursor: "pointer"
-          }}>Create a free account</button>
-                  </div>}
-
-                {/* Account Info */}
-                {authUser && <div style={{
-          marginBottom: 20,
-          background: "#1a1a1a",
-          border: "1px solid #2a2a2a",
-          borderRadius: 14,
-          padding: 16
-        }}>
-                    <div style={{
-            fontSize: 12,
-            color: "#666",
-            fontWeight: 700,
-            textTransform: "uppercase",
-            letterSpacing: "0.1em",
-            marginBottom: 10
-          }}>Your Account</div>
-                    <div style={{ marginBottom: 12 }}>
-                      <div style={{
-                fontSize: 14,
-                color: "#f0ece4",
-                fontWeight: 600
-              }}>{authUser.name || "Your account"}</div>
-                      <div style={{
-                fontSize: 12,
-                color: "#666",
-                marginTop: 2,
-                wordBreak: "break-all"
-              }}>{authUser.email}</div>
-                      <div style={{
-                fontSize: 11,
-                marginTop: 4,
-                fontWeight: 600,
-                color: lifetimeAccess ? "#27ae60" : isPremium ? "#8e44ad" : "#27ae60"
-              }}>
-                        {lifetimeAccess
-                  ? "✓ Free Forever"
-                  : subscriptionPlan
-                    ? `✓ Outstanding Partner — ${
-                        subscriptionPlan.priceString
-                          ? `${subscriptionPlan.priceString}${subscriptionPlan.type === "annual" ? "/year" : subscriptionPlan.type === "monthly" ? "/month" : ""}`
-                          : subscriptionPlan.type === "annual" ? "Yearly" : subscriptionPlan.type === "monthly" ? "Monthly" : "Premium"
-                      }`
-                    : isPremium
-                      ? "✓ Outstanding Partner — Premium"
-                      : "Free plan"}
-                      </div>
-                    </div>
-                    <button onClick={async () => {
-              try {
-                await rcLogOut();
-              } catch (e) {}
-              if (!isPreviewMode) {
-                try {
-                  await signOutUser();
-                } catch (e) {}
-              }
-              try {
-                Object.keys(localStorage).forEach(k => {
-                  if (k.startsWith('op_hydrated_')) sessionStorage.removeItem(k);
-                });
-              } catch (e) {}
-              safeSet("authToken", "");
-              safeSet("authUser", "");
-              safeSet("subscribed", "");
-              safeSet("subTier", "basic");
-              setAuthUser(null);
-              setSubscribed(false);
-              setSubTier("basic");
-              setAuthEmail("");
-              setAuthPassword("");
-            }} style={{
-              width: "100%",
-              background: "#111",
-              border: "1px solid #333",
-              borderRadius: 10,
-              padding: "10px 14px",
-              fontSize: 13,
-              color: "#888",
-              cursor: "pointer",
-              marginBottom: 8
-            }}>
-                      Sign Out
-                    </button>
-                    {!isPreviewMode && <button onClick={() => { setShowChangePw(v => !v); setCpMsg(null); setCpNew(""); setCpConfirm(""); }} style={{
-              width: "100%",
-              background: "#111",
-              border: "1px solid #333",
-              borderRadius: 10,
-              padding: "10px 14px",
-              fontSize: 13,
-              color: "#888",
-              cursor: "pointer",
-              marginBottom: 8
-            }}>
-                      🔑 Change Password
-                    </button>}
-                    {!isPreviewMode && showChangePw && <div style={{
-              background: "#141414",
-              border: "1px solid #2a2a2a",
-              borderRadius: 10,
-              padding: 12,
-              marginBottom: 8
-            }}>
-                      <input type="password" value={cpNew} onChange={e => setCpNew(e.target.value)} placeholder="New password (min 8 characters)" style={{ width: "100%", background: "#1a1a1a", border: "1px solid #333", color: "#f0ece4", borderRadius: 8, padding: "10px 12px", fontSize: 14, boxSizing: "border-box", fontFamily: "inherit", marginBottom: 8 }} />
-                      <input type="password" value={cpConfirm} onChange={e => setCpConfirm(e.target.value)} placeholder="Confirm new password" onKeyDown={e => e.key === "Enter" && submitChangePw()} style={{ width: "100%", background: "#1a1a1a", border: "1px solid #333", color: "#f0ece4", borderRadius: 8, padding: "10px 12px", fontSize: 14, boxSizing: "border-box", fontFamily: "inherit", marginBottom: 8 }} />
-                      {cpMsg && <div style={{ color: cpMsg.ok ? "#27ae60" : "#e74c3c", fontSize: 12, marginBottom: 8 }}>{cpMsg.text}</div>}
-                      <button disabled={cpBusy} onClick={submitChangePw} style={{ width: "100%", background: "#c0392b", color: "#fff", border: "none", borderRadius: 8, padding: "10px 14px", fontSize: 13, fontWeight: 700, cursor: "pointer", opacity: cpBusy ? 0.7 : 1 }}>
-                        {cpBusy ? "Updating…" : "Update Password"}
-                      </button>
-                    </div>}
-                    {!isPremium && <button onClick={() => setSubscribed(false)} style={{
-            width: "100%",
-            background: "linear-gradient(135deg,#8e44ad,#c0392b)",
-            color: "#fff",
-            border: "none",
-            borderRadius: 10,
-            padding: "10px 14px",
-            fontSize: 13,
-            fontWeight: 700,
-            cursor: "pointer",
-            marginBottom: 8
-          }}>
-                        
-                      </button>}
-                    <button onClick={() => {
-            setOnboardSlide(0);
-            setReplayGuide(true);
-          }} style={{
-            width: "100%",
-            background: "#111",
-            border: "1px solid #2a2a2a",
-            borderRadius: 10,
-            padding: "10px 14px",
-            fontSize: 13,
-            color: "#888",
-            cursor: "pointer"
-          }}>
-                      📖 Replay App Guide
-                    </button>
-                  </div>}
-    
                 {/* Danger zone - Reset */}
                 <div style={{
           marginBottom: 20,
@@ -1832,7 +1868,13 @@ export default function ProfileTab() {
               </div>}
     
             {/* CYCLE CALENDAR TAB */}
-            {profileSection === "cycle" && <div>
+            {profileSection === "cycle" && !hasAccount && (
+              <PremiumGate feature="Cycle tracking"
+                blurb="Create a free account to track her cycle — her day, her phase, and what she needs because of it, updated automatically every day. No card needed."
+                cta="Sign up free"
+                onUpgrade={() => requireAccount('signup')} />
+            )}
+            {profileSection === "cycle" && hasAccount && <div>
                 {/* Current status hero */}
                 <div style={{
           background: `linear-gradient(135deg,${phase.color}20,${phase.color}08)`,

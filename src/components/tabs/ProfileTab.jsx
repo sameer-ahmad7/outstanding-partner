@@ -718,7 +718,7 @@ export default function ProfileTab() {
                 {/* Cycle tracking requires a free account (FEATURE_TIERING_FINAL.md puts
                     "set up her cycle start date" and today's day/phase/tip in the account tier).
                     It is also the strongest reason to sign up, so it is the ask we lead with. */}
-                {!hasAccount && (
+                {!isPremium && (
                   <div style={{
                     marginBottom: 20,
                     background: "linear-gradient(135deg,#1a0a1a,#111)",
@@ -728,13 +728,14 @@ export default function ProfileTab() {
                   }}>
                     <div style={{ fontSize: 22, marginBottom: 8 }}>🌙</div>
                     <div style={{ fontSize: 16, fontWeight: 700, color: "#f0ece4", fontFamily: "'Playfair Display',serif", marginBottom: 6 }}>
-                      Sign up to unlock cycle tracking
+                      Unlock cycle tracking
                     </div>
                     <div style={{ fontSize: 13, color: "#8a8a8a", lineHeight: 1.6, marginBottom: 14 }}>
                       Enter her last period date and the app works out her cycle day and phase every
-                      day — so you know what she needs before she has to tell you. Free, no card.
+                      day — so you know what she needs before she has to tell you. Part of the
+                      monthly subscription, and your first month is free.
                     </div>
-                    <button onClick={() => requireAccount('signup')} style={{
+                    <button onClick={requirePremium} style={{
                       width: "100%",
                       background: "linear-gradient(135deg,#c0392b,#8e44ad)",
                       color: "#fff",
@@ -744,11 +745,11 @@ export default function ProfileTab() {
                       fontSize: 14,
                       fontWeight: 800,
                       cursor: "pointer"
-                    }}>Sign up free to unlock</button>
+                    }}>Start my free month</button>
                   </div>
                 )}
 
-                {hasAccount && <>
+                {isPremium && <>
                 {/* ── Period & Cycle Tracking ── */}
                 <div style={{
           marginBottom: 20
@@ -1868,13 +1869,13 @@ export default function ProfileTab() {
               </div>}
     
             {/* CYCLE CALENDAR TAB */}
-            {profileSection === "cycle" && !hasAccount && (
+            {profileSection === "cycle" && !isPremium && (
               <PremiumGate feature="Cycle tracking"
-                blurb="Create a free account to track her cycle — her day, her phase, and what she needs because of it, updated automatically every day. No card needed."
-                cta="Sign up free"
-                onUpgrade={() => requireAccount('signup')} />
+                blurb="Track her cycle with Premium — her day, her phase, and what she needs because of it, updated automatically every day. Your first month is free."
+                cta="Start my free month"
+                onUpgrade={requirePremium} />
             )}
-            {profileSection === "cycle" && hasAccount && <div>
+            {profileSection === "cycle" && isPremium && <div>
                 {/* Current status hero */}
                 <div style={{
           background: `linear-gradient(135deg,${phase.color}20,${phase.color}08)`,

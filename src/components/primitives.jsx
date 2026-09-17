@@ -2,6 +2,7 @@
 // Content preserved verbatim; only `export` added and modules split by concern.
 
 import { useState, useEffect, useRef } from 'react';
+import { setUpsellTrigger, trackGateView } from '../services/analytics.js';
 import {
   NEURO,
   SHC,
@@ -75,6 +76,8 @@ export function NeuroBadge({chem,showLabel=false}) {
 }
 
 export function PremiumGate({onUpgrade, feature="This feature", blurb, cta="Unlock with Premium"}) {
+  useEffect(() => { trackGateView(feature, 'gate'); }, [feature]);
+  const upgrade = () => { setUpsellTrigger(feature); onUpgrade && onUpgrade(); };
   return (
     <div style={{background:"linear-gradient(135deg,#1a0a1a,#0d0d0d)",border:"1px solid #8e44ad40",borderRadius:16,padding:24,textAlign:"center"}}>
       <div style={{fontSize:28,marginBottom:8}}>👑</div>
@@ -82,7 +85,7 @@ export function PremiumGate({onUpgrade, feature="This feature", blurb, cta="Unlo
       <div style={{fontSize:13,color:"#888",lineHeight:1.6,marginBottom:20}}>
         {blurb || <>This is a <strong style={{color:"#8e44ad"}}>Premium</strong> feature. Unlock her full cycle playbook, unlimited missions and texts, saved history and phase-change reminders.</>}
       </div>
-      <button onClick={onUpgrade} style={{width:"100%",background:"linear-gradient(135deg,#8e44ad,#c0392b)",color:"#fff",border:"none",borderRadius:12,padding:"13px 16px",fontSize:14,fontWeight:700,cursor:"pointer"}}>
+      <button onClick={upgrade} style={{width:"100%",background:"linear-gradient(135deg,#8e44ad,#c0392b)",color:"#fff",border:"none",borderRadius:12,padding:"13px 16px",fontSize:14,fontWeight:700,cursor:"pointer"}}>
         {cta}
       </button>
     </div>
@@ -92,9 +95,11 @@ export function PremiumGate({onUpgrade, feature="This feature", blurb, cta="Unlo
 // Inline lock strip for teasing content in place — shows what's behind the lock without
 // pretending the feature doesn't exist. Used for the cycle detail, forecast and history.
 export function LockStrip({onUpgrade, title, body, cta="Unlock"}) {
+  useEffect(() => { trackGateView(title, 'strip'); }, [title]);
+  const upgrade = () => { setUpsellTrigger(title); onUpgrade && onUpgrade(); };
   return (
-    <div onClick={onUpgrade} role="button" tabIndex={0}
-      onKeyDown={(e)=>{if(e.key==="Enter"||e.key===" ")onUpgrade&&onUpgrade();}}
+    <div onClick={upgrade} role="button" tabIndex={0}
+      onKeyDown={(e)=>{if(e.key==="Enter"||e.key===" ")upgrade();}}
       style={{background:"linear-gradient(135deg,#1a0a1a,#111)",border:"1px solid #8e44ad40",borderRadius:14,padding:"14px 16px",cursor:"pointer",display:"flex",gap:12,alignItems:"center"}}>
       <span style={{fontSize:18}}>🔒</span>
       <div style={{flex:1,minWidth:0}}>

@@ -1,4 +1,6 @@
+import { useEffect } from 'react';
 import { useAppState } from '../state/AppStateProvider.jsx';
+import { track, trackScreen, screenName, takeUpsellTrigger } from '../services/analytics.js';
 import AuthScreen from './auth/AuthScreen.jsx';
 import Paywall from './paywall/Paywall.jsx';
 import Onboarding from './onboarding/Onboarding.jsx';
@@ -67,6 +69,23 @@ export default function AppShell() {
   const effectiveAuthScreen = passwordRecovery
     ? "reset"
     : (authUser && !emailVerified ? "verify" : authScreen);
+  const showPaywall = !showAuth && subscriptionReady && !subscribed && paywallOpen;
+
+  // Overlays aren't tabs, so report them as their own screens. The trigger is whichever locked
+  // feature was tapped just before (see setUpsellTrigger).
+  const signUpPrompt = authIntent && !passwordRecovery && !(authUser && !emailVerified);
+  useEffect(() => {
+    if (signUpPrompt) track('sign_up_prompt_view', { trigger: takeUpsellTrigger(), screen: authScreen });
+  }, [signUpPrompt]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    if (showPaywall) { track('paywall_view', { trigger: takeUpsellTrigger() }); trackScreen('paywall'); }
+  }, [showPaywall]);
+  useEffect(() => {
+    if (showAuth) trackScreen(`auth_${effectiveAuthScreen}`);
+  }, [showAuth, effectiveAuthScreen]);
+  useEffect(() => {
+    if (!showAuth && !showPaywall) trackScreen(screenName(scope.tab));
+  }, [showAuth, showPaywall]); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="op-app-frame" style={{minHeight:"100vh",background:"#0d0d0d",color:"#f0ece4",fontFamily:"'DM Sans','Helvetica Neue',sans-serif",maxWidth:480,margin:"0 auto",position:"relative",paddingTop:"var(--op-safe-top)",paddingBottom:"calc(90px + var(--op-safe-bottom))"}}>
@@ -125,7 +144,7 @@ export default function AppShell() {
         </div>
       )}
 
-      {!showAuth&&subscriptionReady&&!subscribed&&paywallOpen&&(
+      {showPaywall&&(
         <Paywall
           subscription={subscription}
           isPreviewMode={isPreviewMode}

@@ -1,4 +1,5 @@
 import { useAppState } from '../../state/AppStateProvider.jsx';
+import { track } from '../../services/analytics.js';
 
 export default function GuideTab() {
   const scope = useAppState();
@@ -111,7 +112,7 @@ export default function GuideTab() {
               lineHeight: 1.5,
               marginBottom: 12
             }}>{todayTask.tip}</div>
-                          {!completedDays.includes(todayTask.day) && currentLevel === 1 ? <button onClick={() => setCompletedDays(p => [...p, todayTask.day])} style={{
+                          {!completedDays.includes(todayTask.day) && currentLevel === 1 ? <button onClick={() => { setCompletedDays(p => [...p, todayTask.day]); track('guide_day_complete', { day: todayTask.day }); }} style={{
               width: "100%",
               background: levelColor,
               color: "#111",

@@ -1,8 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import * as RC from '../services/revenuecat.service.js';
 import * as RCWeb from '../services/revenuecatWeb.service.js';
-import { setNativeAnalyticsUser, logNativePurchase } from '../services/analytics.native.js';
-import { trackWeb, trackWebPixel } from '../services/analytics.web.js';
+import { track, trackPixel } from '../services/analytics.js';
 
 // Pull a numeric amount out of a localized price string ("$224.99" → 224.99).
 function priceToNumber(s) {
@@ -109,7 +108,7 @@ export function useSubscription(userId) {
         const ok = await RC.configureRC();
         if (!ok) { if (mounted) setReady(true); return; }
         await RC.addCustomerInfoListener((info) => { if (mounted) applyInfo(info); });
-        if (userId) { await RC.rcLogIn(userId); setNativeAnalyticsUser(userId); }
+        if (userId) await RC.rcLogIn(userId);
         await refreshNative();
         if (mounted) setReady(true);
       })();
@@ -124,6 +123,22 @@ export function useSubscription(userId) {
     if (native) return refreshNative();
   }, [web, native, refreshWeb, refreshNative]);
 
+  // Client-side funnel events. The trial→paid conversion, renewals and cancellations happen
+  // store-side, so those reach GA4 from the RevenueCat → Firebase integration (rc_* events).
+  const trackPurchase = (pkg, isTrial) => {
+    const value = pkg?.product?.price != null ? Number(pkg.product.price) : priceToNumber(pkg?.product?.priceString);
+    const currency = pkg?.product?.currencyCode || 'USD';
+    const productId = pkg?.product?.identifier || undefined;
+    if (isTrial) {
+      // A free month bills nothing; reporting its price as a purchase inflated revenue.
+      track('start_trial', { currency, value: 0, product_id: productId });
+      trackPixel('StartTrial', { currency, value: 0, predicted_ltv: value });
+    } else {
+      track('purchase', { currency, value, product_id: productId, items: productId ? [{ item_id: productId, item_name: productId, price: value, quantity: 1 }] : undefined });
+      trackPixel('Purchase', { currency, value });
+    }
+  };
+
   const purchase = useCallback(async (pkg, customerEmail) => {
     setBusy(true);
     try {
@@ -132,23 +147,21 @@ export function useSubscription(userId) {
         const ok = RCWeb.isPremiumWeb(info);
         if (ok) {
           setIsSubscribed(true); setManagementURL(RCWeb.webManagementURL(info)); setActiveProductId(RCWeb.webActiveProductId(info));
-          const value = priceToNumber(pkg?.product?.priceString);
-          trackWeb('purchase', { value, currency: 'USD', product_id: pkg?.product?.identifier || null });
-          trackWebPixel('Purchase', { value, currency: 'USD' });
+          const ent = normalizeEntitlement(info?.entitlements?.active?.[RCWeb.ENTITLEMENT_ID]);
+          trackPurchase(pkg, ent ? ent.isTrial : !!pkg?.product?.introPrice);
+        } else {
+          track('checkout_cancelled', { product_id: pkg?.product?.identifier });
         }
         return ok;
       }
       const ok = await RC.purchasePackage(pkg);
       setIsSubscribed(ok);
-      if (ok) {
-        logNativePurchase({
-          value: pkg?.product?.price,
-          currency: pkg?.product?.currencyCode || 'USD',
-          productId: pkg?.product?.identifier,
-          isTrial: !!pkg?.product?.introPrice,
-        });
-      }
+      if (ok) trackPurchase(pkg, !!pkg?.product?.introPrice && Number(pkg.product.introPrice.price) === 0);
+      else track('checkout_cancelled', { product_id: pkg?.product?.identifier });
       return ok;
+    } catch (e) {
+      track('checkout_cancelled', { product_id: pkg?.product?.identifier, reason: /cancel/i.test(e?.message || '') ? 'user_cancelled' : 'error' });
+      throw e;
     } finally { setBusy(false); }
   }, [web]);
 
@@ -157,9 +170,9 @@ export function useSubscription(userId) {
     try {
       // Web purchases are tied to the app_user_id (Supabase id) — "restore" is just a
       // re-fetch of the customer's entitlements.
-      if (web) return await refreshWeb();
-      const ok = await RC.restorePurchases();
-      setIsSubscribed(ok);
+      const ok = web ? await refreshWeb() : await RC.restorePurchases();
+      if (!web) setIsSubscribed(ok);
+      track('restore_purchases', { success: ok ? 'yes' : 'no' });
       return ok;
     } finally { setBusy(false); }
   }, [web, refreshWeb]);

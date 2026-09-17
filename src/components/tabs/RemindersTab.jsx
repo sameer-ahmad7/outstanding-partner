@@ -1,4 +1,5 @@
 import { useAppState } from '../../state/AppStateProvider.jsx';
+import { track } from '../../services/analytics.js';
 
 export default function RemindersTab() {
   const scope = useAppState();
@@ -38,6 +39,7 @@ export default function RemindersTab() {
       }}>
                   <input value={sheSaidInput} onChange={e => setSheSaidInput(e.target.value)} onKeyDown={e => {
           if (e.key === "Enter" && sheSaidInput.trim()) {
+            track('she_said_saved', { source: 'reminders' });
             setSheSaid(p => [{
               text: sheSaidInput.trim(),
               date: getToday(),
@@ -57,6 +59,7 @@ export default function RemindersTab() {
         }} />
                   <button onClick={() => {
           if (sheSaidInput.trim()) {
+            track('she_said_saved', { source: 'reminders' });
             setSheSaid(p => [{
               text: sheSaidInput.trim(),
               date: getToday(),

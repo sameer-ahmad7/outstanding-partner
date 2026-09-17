@@ -200,7 +200,7 @@ export default function ProfileTab() {
             lineHeight: 1.6,
             marginBottom: 12
           }}>You're not signed in. Create a free account to save your progress, streak and notes — and to keep them if you change device.</div>
-                    <button onClick={() => requireAccount('login')} style={{
+                    <button onClick={() => requireAccount('login', 'profile_sign_in')} style={{
             width: "100%",
             background: "#c0392b",
             color: "#fff",
@@ -212,7 +212,7 @@ export default function ProfileTab() {
             cursor: "pointer",
             marginBottom: 8
           }}>Sign In</button>
-                    <button onClick={() => requireAccount('signup')} style={{
+                    <button onClick={() => requireAccount('signup', 'profile_sign_up')} style={{
             width: "100%",
             background: "transparent",
             border: "1px solid #333",
@@ -569,7 +569,7 @@ export default function ProfileTab() {
                           </div>
                         </div>
                       ))}
-                      <button onClick={requirePremium} style={{
+                      <button onClick={() => requirePremium('profile_premium_card')} style={{
                         width: "100%",
                         background: "linear-gradient(135deg,#c0392b,#8e44ad)",
                         color: "#fff",
@@ -735,7 +735,7 @@ export default function ProfileTab() {
                       day — so you know what she needs before she has to tell you. Part of the
                       monthly subscription, and your first month is free.
                     </div>
-                    <button onClick={requirePremium} style={{
+                    <button onClick={() => requirePremium('profile_cycle_tracking')} style={{
                       width: "100%",
                       background: "linear-gradient(135deg,#c0392b,#8e44ad)",
                       color: "#fff",

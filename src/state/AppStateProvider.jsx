@@ -8,6 +8,7 @@ import { getUserSubscription } from '../services/appData.service.js';
 import { useSubscription } from '../hooks/useSubscription.js';
 import { rcLogOut } from '../services/revenuecat.service.js';
 import { initStatusBar, isNative } from '../services/platform.service.js';
+import { track, trackPixel, trackScreen, screenName, identify, setUserProps, setUpsellTrigger, rememberAuthMethod, trackAuthSession } from '../services/analytics.js';
 import { NEURO, SHC, LPP, TASK_LPP, ZODIAC_SIGNS, CHINESE_ZODIAC, NUMEROLOGY, REMINDER_LIBRARY, CATEGORIES, DAYS_OF_WEEK, DAY_LABELS, CYCLE_PHASES, NEEDS, NEED_COLORS, DAILY_TASKS, TEXT_SAMPLES, MONTHS, DAILY_TRUTHS, PHASE_SCRIPTS, DIAGNOSTIC_QUESTIONS, CHALLENGE_30, CHALLENGE_60, CHALLENGE_90, CHALLENGE_MONTHLY, SEASONAL_THEMES, EXTENDED_TASKS, EXTENDED_TEXTS, DATE_IDEAS, TEXT_SHC, TASK_SHC, SEASONAL_CAMPAIGNS, HOME_ACTIVITIES, HOME_ACTIVITY_TASKS, HOME_ACTIVITY_REMINDERS, ALL_REMINDERS } from '../constants/data.js';
 import { getLifePathNumber, getCurrentPhase, getCycleDay, getToday, getDayOfYear, getDailyTextFromLibrary, getDailyActivityFromLibrary, API_URL, APP_SECRET, fetchAI, _store, safeGet, safeGetJSON, copyText, safeSet, getChineseZodiac, getZodiacFromDate, getMonthKey, getActiveCampaign, getWeekKey, getCurrentMonth, getSeasonalTheme, getVarietyTask, getVarietyTexts } from '../utils/helpers.js';
 import { NeedBadge, NeuroBadge, PremiumGate, LockStrip, SHCBadge, SHCRow, LPPBadge, NeuroPanel, PhaseCard, ReminderCard } from '../components/primitives.jsx';
@@ -94,6 +95,7 @@ export function AppStateProvider({ children, onRehydrated }) {
   });
   
   const handleCycleStart = val => {
+    if (val) track('cycle_start_set');
     setCycleStartDate(val);
     safeSet("cycleStartDate", val);
     const day = getCycleDay(val);
@@ -423,8 +425,12 @@ export function AppStateProvider({ children, onRehydrated }) {
 
   // Call from any locked UI. Anonymous users are sent to sign-up first (cheaper ask),
   // signed-in users straight to the paywall.
-  const requireAccount = useCallback((screen) => {
+  // `trigger` (or a feature name passed to requirePremium) says which locked feature asked, for
+  // paywall_view / sign_up_prompt_view attribution. onUpgrade={requirePremium} passes a click
+  // event instead, which is ignored — LockStrip/PremiumGate record their own title first.
+  const requireAccount = useCallback((screen, trigger) => {
     if (hasAccount) return true;
+    if (typeof trigger === 'string') setUpsellTrigger(trigger);
     setAuthScreen(screen || 'signup');
     setAuthIntent(true);
     return false;
@@ -436,15 +442,28 @@ export function AppStateProvider({ children, onRehydrated }) {
   useEffect(() => { if (hasAccount) setAuthIntent(false); }, [hasAccount]);
   useEffect(() => { if (isPremium) setPaywallOpen(false); }, [isPremium]);
 
-  const requirePremium = useCallback(() => {
+  const requirePremium = useCallback((feature) => {
     if (isPremium) return true;
+    if (typeof feature === 'string') setUpsellTrigger(feature);
     if (!hasAccount) { setAuthScreen('signup'); setAuthIntent(true); return false; }
     setPaywallOpen(true);
     return false;
   }, [isPremium, hasAccount]);
 
-  // RevenueCat entitlement state (native). Drives the hard paywall + access.
-  
+  // ── Analytics identity + screens ─────────────────────────────────────────
+  useEffect(() => {
+    if (isPreviewMode || SCREENSHOT) return;
+    identify(authUser?.id || null);
+  }, [authUser?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { setUserProps({ access_tier: accessTier }); }, [accessTier]);
+  useEffect(() => { trackScreen(screenName(tab)); }, [tab]);
+  // Onboarding counts as complete on the transition, not when a returning user hydrates as onboarded.
+  const wasOnboarded = useRef(onboarded);
+  useEffect(() => {
+    if (onboarded && !wasOnboarded.current) track('tutorial_complete');
+    wasOnboarded.current = onboarded;
+  }, [onboarded]);
+
   // RevenueCat entitlement state (native). Drives the hard paywall + access.
   const subscription = useSubscription(authUser?.id);
   
@@ -514,14 +533,14 @@ export function AppStateProvider({ children, onRehydrated }) {
       data
     }) => {
       const u = data?.session?.user;
-      if (mounted && u) setAuthUser(toAuthUser(u));
+      if (mounted && u) { setAuthUser(toAuthUser(u)); trackAuthSession(u); }
     });
     const {
       data: sub
     } = onAuthChange((session, event) => {
       if (!mounted) return;
       if (event === 'PASSWORD_RECOVERY') setPasswordRecovery(true);
-      if (session?.user) setAuthUser(toAuthUser(session.user));else setAuthUser(null);
+      if (session?.user) { setAuthUser(toAuthUser(session.user)); trackAuthSession(session.user); } else setAuthUser(null);
     });
     return () => {
       mounted = false;
@@ -1226,6 +1245,7 @@ export function AppStateProvider({ children, onRehydrated }) {
     if (isPreviewMode) { return handleLogin(); }
     setAuthError("");
     setAuthLoading(true);
+    rememberAuthMethod(provider);
     try {
       if (provider === 'apple') await signInWithApple();
       else await signInWithGoogle();
@@ -1234,6 +1254,7 @@ export function AppStateProvider({ children, onRehydrated }) {
       // socialAuthErrorMessage returns null when the user simply dismissed the sheet, and a
       // human-readable string otherwise. The raw provider error is never shown: Apple's
       // NSError reads "AuthorizationError error 1000", which told the user nothing.
+      rememberAuthMethod(null); // dismissed or failed — don't mislabel a later email sign-in
       const msg = socialAuthErrorMessage(e, provider);
       if (msg) setAuthError(msg);
     } finally {
@@ -1259,6 +1280,7 @@ export function AppStateProvider({ children, onRehydrated }) {
     }
     setAuthLoading(true);
     setAuthError("");
+    rememberAuthMethod('email');
     try {
       const {
         data,
@@ -1324,6 +1346,7 @@ export function AppStateProvider({ children, onRehydrated }) {
       // with an empty identities[] and no email is sent. Detect it and tell the user to sign in
       // instead of showing the "check your email" screen for an email that never goes out.
       const alreadyRegistered = data?.user && Array.isArray(data.user.identities) && data.user.identities.length === 0;
+      if (!alreadyRegistered) { track('sign_up', { method: 'email' }); trackPixel('CompleteRegistration', { status: 'email' }); }
       if (alreadyRegistered) {
         setAuthError("An account with this email already exists. Please sign in.");
         setAuthScreen("login");
@@ -1552,6 +1575,7 @@ export function AppStateProvider({ children, onRehydrated }) {
   HIS PILLAR: [Lead / Protect / Provide / Stay Attractive / Be Masculine]
   NEURO: [brain chemicals triggered + one sentence why]`);
       setAiText(r || "");
+      if (r) track('ai_text_generated', { phase: phase.label });
     } catch (e) {
       console.error(e);
     } finally {
@@ -1598,6 +1622,7 @@ export function AppStateProvider({ children, onRehydrated }) {
   NEURO IMPACT: [brain chemicals + the mechanism]
   PRO TIP: [one insider detail that elevates this from good to unforgettable]`);
       setAiActivity(r || "");
+      if (r) track('ai_activity_generated', { phase: phase.label });
     } catch (e) {
       console.error(e);
     } finally {

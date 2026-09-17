@@ -66,15 +66,37 @@ export async function initNativeTracking() {
 }
 
 // Associate analytics/crash reports with the signed-in user (Supabase id — not PII).
+// Passing null on sign-out detaches later events from the previous user.
 export async function setNativeAnalyticsUser(userId) {
-  if (!isNative() || !userId) return;
+  if (!isNative()) return;
+  const id = userId ? String(userId) : null;
   try {
     const { FirebaseAnalytics } = await import('@capacitor-firebase/analytics');
-    await FirebaseAnalytics.setUserId({ userId: String(userId) });
+    await FirebaseAnalytics.setUserId({ userId: id });
   } catch (e) { /* ignore */ }
   try {
     const { FirebaseCrashlytics } = await import('@capacitor-firebase/crashlytics');
-    await FirebaseCrashlytics.setUserId({ userId: String(userId) });
+    await FirebaseCrashlytics.setUserId({ userId: id || '' });
+  } catch (e) { /* ignore */ }
+}
+
+export async function setNativeUserProperties(props) {
+  if (!isNative() || !props) return;
+  try {
+    const { FirebaseAnalytics } = await import('@capacitor-firebase/analytics');
+    for (const [key, value] of Object.entries(props)) {
+      await FirebaseAnalytics.setUserProperty({ key, value: value == null ? null : String(value) });
+    }
+  } catch (e) { /* ignore */ }
+}
+
+// The whole app is one WebView, so Firebase's automatic screen reporting only ever sees
+// the host view controller/activity. Tabs are reported by hand instead.
+export async function logNativeScreen(screen) {
+  if (!isNative() || !screen) return;
+  try {
+    const { FirebaseAnalytics } = await import('@capacitor-firebase/analytics');
+    await FirebaseAnalytics.setCurrentScreen({ screenName: screen, screenClassOverride: screen });
   } catch (e) { /* ignore */ }
 }
 
@@ -85,14 +107,4 @@ export async function logNativeEvent(name, params) {
     const { FirebaseAnalytics } = await import('@capacitor-firebase/analytics');
     await FirebaseAnalytics.logEvent({ name, params: params || {} });
   } catch (e) { /* ignore */ }
-}
-
-// Fire a purchase (or trial-start) event to Firebase Analytics. Meta receives the
-// equivalent via the RevenueCat → Meta integration, so we don't double-log it here.
-export async function logNativePurchase({ value, currency = 'USD', productId, isTrial } = {}) {
-  await logNativeEvent(isTrial ? 'start_trial' : 'purchase', {
-    ...(value != null ? { value: Number(value) } : {}),
-    currency,
-    ...(productId ? { product_id: productId } : {}),
-  });
 }

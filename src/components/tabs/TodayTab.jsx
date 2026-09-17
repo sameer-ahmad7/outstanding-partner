@@ -1,4 +1,5 @@
 import { useAppState } from '../../state/AppStateProvider.jsx';
+import { track } from '../../services/analytics.js';
 
 export default function TodayTab() {
   const scope = useAppState();
@@ -336,7 +337,7 @@ export default function TodayTab() {
             }}>Her cycle day and phase every day, plus what she needs in each one. Part of the monthly subscription — your first month is free.</div>
                       </div>
                     </div>
-                    <button onClick={(e) => { e.stopPropagation(); requirePremium(); }} style={{
+                    <button onClick={(e) => { e.stopPropagation(); requirePremium('unlock cycle tracking'); }} style={{
           width: "100%",
           background: "linear-gradient(135deg,#c0392b,#8e44ad)",
           color: "#fff",
@@ -410,7 +411,7 @@ export default function TodayTab() {
               letterSpacing: "0.12em",
               fontWeight: 700
             }}>Today's Mission</div>
-                        {shuffleBtn(() => { setShowLogForm(false); setTaskTurn(t => t + 1); })}
+                        {shuffleBtn(() => { setShowLogForm(false); setTaskTurn(t => t + 1); track('content_shuffle', { card: 'mission' }); })}
                       </div>
                       <div style={{
             background: "#1a1a1a",
@@ -502,6 +503,7 @@ export default function TodayTab() {
                 [wk]: [...(p[wk] || []), task.id]
               }));
               setTaskTurn(t => t + 1); // advance to the next mission
+              track('mission_complete', { phase: phase.label, rating: logRating || 3 });
               setShowLogForm(false);
               setLogNote("");
               setLogRating(0);
@@ -553,7 +555,7 @@ export default function TodayTab() {
               letterSpacing: "0.12em",
               fontWeight: 700
             }}>Today's Text</div>
-                        {shuffleBtn(() => setTextTurn(n => n + 1))}
+                        {shuffleBtn(() => { setTextTurn(n => n + 1); track('content_shuffle', { card: 'text' }); })}
                       </div>
                       <div style={{
             background: "#1a1a1a",
@@ -572,7 +574,7 @@ export default function TodayTab() {
               display: "flex",
               gap: 8
             }}>
-                          <button onClick={() => copyText(t.text, () => {
+                          <button onClick={() => { track('text_copied', { source: 'today' }); copyText(t.text, () => {
                 const el = document.createElement('div');
                 el.textContent = "✓ Copied";
                 el.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#27ae60;color:#fff;padding:10px 20px;border-radius:12px;font-size:13px;font-weight:700;z-index:9999;pointer-events:none';
@@ -582,7 +584,7 @@ export default function TodayTab() {
                   el.style.transition = 'opacity 0.5s';
                   setTimeout(() => el.remove(), 500);
                 }, 1500);
-              })} style={{
+              }); }} style={{
                 flex: 1,
                 background: "#111",
                 border: `1px solid ${phase.color}40`,
@@ -596,6 +598,7 @@ export default function TodayTab() {
                           <button onClick={() => {
                 setLastTextDate(todayKey);
                 setTextTurn(n => n + 1); // advance to the next text
+                track('text_sent', { source: 'today', phase: phase.label });
                 const el = document.createElement('div');
                 el.textContent = "✓ Sent.";
                 el.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#27ae60;color:#fff;padding:10px 20px;border-radius:12px;font-size:13px;font-weight:700;z-index:9999;pointer-events:none';
@@ -647,7 +650,7 @@ export default function TodayTab() {
               letterSpacing: "0.12em",
               fontWeight: 700
             }}>This Week's Activity</div>
-                        {shuffleBtn(() => setActivityTurn(n => n + 1))}
+                        {shuffleBtn(() => { setActivityTurn(n => n + 1); track('content_shuffle', { card: 'activity' }); })}
                       </div>
                       <div style={{
             background: "#1a1a1a",
@@ -677,7 +680,7 @@ export default function TodayTab() {
                 }}>{act.howTo || act.description}</div>
                           </div>
                         </div>
-                        <button onClick={() => { setLastActivityDate(wk); setActivityTurn(n => n + 1); }} style={{
+                        <button onClick={() => { setLastActivityDate(wk); setActivityTurn(n => n + 1); track('activity_done', { phase: phase.label }); }} style={{
               width: "100%",
               background: "#9b59b6",
               color: "#fff",
@@ -717,7 +720,7 @@ export default function TodayTab() {
               fontWeight: 700
             }}>🗓️ {MONTHS[now.getMonth()]}'s Date</div>
                         <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
-                          {shuffleBtn(() => setDateTurn(n => n + 1))}
+                          {shuffleBtn(() => { setDateTurn(n => n + 1); track('content_shuffle', { card: 'date_idea' }); })}
                           <div style={{
                 fontSize: 10,
                 fontWeight: 700,
@@ -757,6 +760,7 @@ export default function TodayTab() {
               safeSet(`dateDone-${monthKey}`, "1");
               setDateDoneMonth(monthKey);
               setDateTurn(n => n + 1); // advance to a new date idea, like the other cards
+              track('date_idea_done');
               const el = document.createElement('div');
               el.textContent = "✓ Nice!";
               el.style.cssText = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#1abc9c;color:#fff;padding:10px 20px;border-radius:12px;font-size:13px;font-weight:700;z-index:9999;pointer-events:none';

@@ -1,6 +1,7 @@
 import { rcLogOut } from '../../services/revenuecat.service.js';
 import { signOutUser } from '../../services/auth.service.js';
 import { openExternal } from '../../utils/helpers.js';
+import { track, trackPixel } from '../../services/analytics.js';
 
 // Upgrade sheet. Single monthly plan with a free intro month.
 //
@@ -57,6 +58,10 @@ export default function Paywall({
       try { await subscription.refresh?.(); } catch (e) { /* ignore */ }
       return;
     }
+    const value = chosen.product?.price != null ? Number(chosen.product.price) : Number(String(price).replace(/[^\d.]/g, '')) || undefined;
+    const currency = chosen.product?.currencyCode || 'USD';
+    track('begin_checkout', { currency, value, product_id: chosen.product?.identifier, trial: trial ? trial.label : 'none' });
+    trackPixel('InitiateCheckout', { currency, value });
     try {
       const ok = await subscription.purchase(chosen);
       if (ok) { setSubscribed(true); onClose?.(); } else { setSubMsg('Purchase was not completed.'); }

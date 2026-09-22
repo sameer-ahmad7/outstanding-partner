@@ -17,6 +17,7 @@
   /* "Outstanding Web" stream of the Firebase-linked GA4 property (546200204). */
   var GA4_ID = 'G-R68S6VW8R9';
   var PIXEL_ID = '1110278981958912';
+  var REDDIT_PIXEL_ID = 'a2_jireschxb916';
 
   /* --- Google Analytics 4 --- */
   var g = document.createElement('script');
@@ -40,12 +41,24 @@
     }(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
     window.fbq('init', PIXEL_ID);
     window.fbq('track', 'PageView');
+
+    /* --- Reddit Pixel --- */
+    !function (w, d) {
+      if (w.rdt) return; var p = w.rdt = function () {
+        p.sendEvent ? p.sendEvent.apply(p, arguments) : p.callQueue.push(arguments); };
+      p.callQueue = []; var t = d.createElement('script');
+      t.src = 'https://www.redditstatic.com/ads/pixel.js'; t.async = !0;
+      var s = d.getElementsByTagName('script')[0]; s.parentNode.insertBefore(t, s);
+    }(window, document);
+    window.rdt('init', REDDIT_PIXEL_ID, { optOut: false, useDecimalCurrencyValues: true });
+    window.rdt('track', 'PageVisit');
   }
 
   /* --- "Download clicked" conversion (fired from the store badges) --- */
   window.opTrackDownload = function (store) {
     try { if (window.gtag) window.gtag('event', 'download_click', { store: store }); } catch (e) {}
     try { if (window.fbq) window.fbq('trackCustom', 'DownloadClick', { store: store }); } catch (e) {}
+    try { if (window.rdt) window.rdt('track', 'Custom', { customEventName: 'DownloadClick' }); } catch (e) {}
   };
   document.addEventListener('DOMContentLoaded', function () {
     var ios = document.querySelector('a.appstore');

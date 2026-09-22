@@ -10,6 +10,7 @@ import { Capacitor } from '@capacitor/core';
 // localhost); ?ga_debug=0 turns it off again.
 const GA4_ID = 'G-R68S6VW8R9';
 const PIXEL_ID = '1110278981958912';
+const REDDIT_PIXEL_ID = 'a2_jireschxb916';
 
 let started = false;
 
@@ -55,6 +56,17 @@ export function initWebAnalytics() {
   }(window, document, 'script', 'https://connect.facebook.net/en_US/fbevents.js');
   window.fbq('init', PIXEL_ID);
   window.fbq('track', 'PageView');
+
+  // Reddit Pixel
+  !function (w, d) {
+    if (w.rdt) return; var p = w.rdt = function () {
+      p.sendEvent ? p.sendEvent.apply(p, arguments) : p.callQueue.push(arguments); };
+    p.callQueue = []; var t = d.createElement('script');
+    t.src = 'https://www.redditstatic.com/ads/pixel.js'; t.async = !0;
+    var s = d.getElementsByTagName('script')[0]; s.parentNode.insertBefore(t, s);
+  }(window, document);
+  window.rdt('init', REDDIT_PIXEL_ID, { optOut: false, useDecimalCurrencyValues: true });
+  window.rdt('track', 'PageVisit');
 }
 
 // Fire a GA4 event (safe no-op if analytics didn't init, e.g. native/dev).
@@ -65,6 +77,17 @@ export function trackWeb(event, params) {
 // Fire a Meta Pixel event. standard=true → track (standard event); false → trackCustom.
 export function trackWebPixel(event, params, standard = true) {
   try { if (window.fbq) window.fbq(standard ? 'track' : 'trackCustom', event, params || {}); } catch { /* ignore */ }
+}
+
+// Fire a Reddit Pixel event. Standard names: SignUp, Lead, ViewContent, Purchase, …;
+// anything else goes as a Custom event.
+const REDDIT_STANDARD = new Set(['PageVisit', 'ViewContent', 'Search', 'AddToCart', 'AddToWishlist', 'Purchase', 'Lead', 'SignUp']);
+export function trackWebReddit(event, params) {
+  try {
+    if (!window.rdt) return;
+    if (REDDIT_STANDARD.has(event)) window.rdt('track', event, params || {});
+    else window.rdt('track', 'Custom', { customEventName: event, ...(params || {}) });
+  } catch { /* ignore */ }
 }
 
 // The app's tabs aren't URLs, so each one is sent as a virtual page view under /app/.

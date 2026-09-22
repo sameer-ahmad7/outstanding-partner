@@ -1,4 +1,5 @@
 import { Capacitor } from '@capacitor/core';
+import { startAppsFlyer } from './appsflyer.native.js';
 
 // Native (iOS/Android) analytics + crash reporting. Every export is a safe no-op
 // on web (the web build uses analytics.web.js — GA4 + Meta Pixel — instead).
@@ -63,6 +64,9 @@ export async function initNativeTracking() {
     const { FirebaseCrashlytics } = await import('@capacitor-firebase/crashlytics');
     await FirebaseCrashlytics.setEnabled({ enabled: true });
   } catch (e) { console.warn('[analytics.native] Crashlytics init', e?.message || e); }
+
+  // AppsFlyer last: on iOS it must start after the ATT answer above.
+  startAppsFlyer();
 }
 
 // Associate analytics/crash reports with the signed-in user (Supabase id — not PII).

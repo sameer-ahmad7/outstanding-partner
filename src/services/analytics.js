@@ -1,5 +1,6 @@
 import { Capacitor } from '@capacitor/core';
-import { trackWeb, trackWebPixel, trackWebScreen, setWebUser, setWebUserProperties } from './analytics.web.js';
+import { trackWeb, trackWebPixel, trackWebReddit, trackWebScreen, setWebUser, setWebUserProperties } from './analytics.web.js';
+import { logAppsFlyerEvent, setAppsFlyerUser } from './appsflyer.native.js';
 import { logNativeEvent, logNativeScreen, setNativeAnalyticsUser, setNativeUserProperties } from './analytics.native.js';
 
 // One tracking API for the whole app. Native → Firebase Analytics, web → GA4 (gtag).
@@ -14,6 +15,8 @@ import { logNativeEvent, logNativeScreen, setNativeAnalyticsUser, setNativeUserP
 //               content_shuffle, she_said_saved, cycle_start_set, guide_day_complete,
 //               ai_text_generated, ai_activity_generated
 // Subscription renewals/cancellations come server-side from RevenueCat (rc_* events).
+// The funnel events are also mirrored to the ad networks (see mirrorToAdNetworks):
+// AppsFlyer on iOS/Android, the Reddit Pixel on web.
 
 const isNative = () => Capacitor?.isNativePlatform?.() || false;
 
@@ -32,6 +35,46 @@ export function track(name, params) {
   const p = clean(params);
   if (isNative()) logNativeEvent(name, p);
   else trackWeb(name, p);
+  mirrorToAdNetworks(name, p);
+}
+
+// AppsFlyer passes these on to Meta/Reddit through its partner integrations, so only the
+// events an ad network can optimise for are sent — engagement stays in GA4. Trials carry
+// no revenue: the free month bills nothing, and the paid conversion arrives server-side.
+function mirrorToAdNetworks(name, p) {
+  const native = isNative();
+  const af = (event, values) => native && logAppsFlyerEvent(event, clean(values));
+  const reddit = (event, values) => !native && trackWebReddit(event, clean(values));
+  const money = { currency: p.currency || 'USD', value: p.value, itemCount: 1 };
+  switch (name) {
+    case 'sign_up':
+      af('af_complete_registration', { af_registration_method: p.method });
+      reddit('SignUp');
+      break;
+    case 'login':
+      af('af_login');
+      break;
+    case 'tutorial_complete':
+      af('af_tutorial_completion', { af_success: true });
+      break;
+    case 'paywall_view':
+      af('af_content_view', { af_content_type: 'paywall', af_content_id: p.trigger });
+      reddit('ViewContent');
+      break;
+    case 'begin_checkout':
+      af('af_initiated_checkout', { af_price: p.value, af_currency: money.currency, af_content_id: p.product_id });
+      reddit('AddToCart', money);
+      break;
+    case 'start_trial':
+      af('af_start_trial', { af_currency: money.currency, af_content_id: p.product_id });
+      reddit('Lead');
+      break;
+    case 'purchase':
+      af('af_subscribe', { af_revenue: p.value, af_currency: money.currency, af_content_id: p.product_id });
+      reddit('Purchase', money);
+      break;
+    default:
+  }
 }
 
 // Meta Pixel on web only; native Meta events come from the SDK / RevenueCat.
@@ -52,7 +95,7 @@ export function trackScreen(screen) {
 }
 
 export function identify(userId) {
-  if (isNative()) setNativeAnalyticsUser(userId || null);
+  if (isNative()) { setNativeAnalyticsUser(userId || null); setAppsFlyerUser(userId); }
   else setWebUser(userId || null);
 }
 
